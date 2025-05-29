@@ -1,4 +1,3 @@
-// context/FormContext.js
 import React, { createContext, useContext, useState } from "react";
 
 const FormContext = createContext();
@@ -24,3 +23,6 @@ export const useFormData = () => {
   }
   return context;
 };
+
+// ✅ Add a default export for routing compatibility
+export default FormDataProvider;
