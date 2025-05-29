@@ -9,7 +9,7 @@ export default function Login() {
 
   return (
     <View style={{ padding: 24, flex: 1, justifyContent: 'center' as const }}>
-      <Text style={{ fontSize: 28, marginBottom: 24, fontWeight: 'bold' }}>Welcome Back</Text>
+      <Text style={{ fontSize: 28, marginBottom: 60, fontWeight: 'bold' }}>Welcome</Text>
 
       <TextInput
         placeholder="Email"
@@ -29,15 +29,11 @@ export default function Login() {
         autoComplete="password"
       />
 
-      <View style={styles.rememberRow}>
-        <Text>Remember me</Text>
-        <Switch value={remember} onValueChange={setRemember} />
-      </View>
 
-      <Button title="Log In" onPress={() => {}} />
+      <Button title="Sign Up" onPress={() => {}} />
 
-      <Link href="/signup">
-        <Text style={styles.link}>Don’t have an account? Sign Up</Text>
+      <Link href="/">
+        <Text style={styles.link}>Already have an account? Sign in</Text>
       </Link>
     </View>
   );
