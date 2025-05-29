@@ -9,7 +9,7 @@ export default function Login() {
 
   return (
     <View style={{ padding: 24, flex: 1, justifyContent: 'center' as const }}>
-      <Text style={{ fontSize: 28, marginBottom: 24, fontWeight: 'bold' }}>Welcome</Text>
+      <Text style={{ fontSize: 28, marginBottom: 60, fontWeight: 'bold' }}>Welcome</Text>
 
       <TextInput
         placeholder="Email"
@@ -32,7 +32,7 @@ export default function Login() {
 
       <Button title="Sign Up" onPress={() => {}} />
 
-      <Link href="/signin">
+      <Link href="/">
         <Text style={styles.link}>Already have an account? Sign in</Text>
       </Link>
     </View>
