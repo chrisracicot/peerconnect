@@ -118,7 +118,7 @@ const LoginScreen = () => {
 
             
             {/* Somewhere in your JSX */}
-<Link href="/signup">
+<Link href="/signup" style={{marginTop: 5, marginBottom: 10}}>
   <Text style={{ color: 'blue' }}>Go to Signup</Text>
 </Link>
             <View style={styles.checker}>
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     textAlign: "center",
-    marginBottom: 10,
+    marginBottom: 30,
   },
 
   subtitle: {
@@ -208,9 +208,9 @@ const styles = StyleSheet.create({
   loginButton: {
     backgroundColor: "#0066CC",
     borderRadius: 5,
-    paddingVertical: 15,
+    paddingVertical: 10,
     alignItems: "center",
-    marginTop: 30,
+    marginTop: 15,
   },
   loginButtonText: {
     color: "#FFF",

@@ -1,4 +1,4 @@
-import { View, Text, TextInput, Button, Switch } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Switch, TouchableOpacity } from 'react-native';
 import { useState } from 'react';
 import { Link } from 'expo-router';
 
@@ -8,8 +8,10 @@ export default function Login() {
   const [remember, setRemember] = useState(false);
 
   return (
-    <View style={{ padding: 24, flex: 1, justifyContent: 'center' as const }}>
-      <Text style={{ fontSize: 28, marginBottom: 60, fontWeight: 'bold' }}>Welcome</Text>
+    <View style={{ padding: 24, flex: 1, justifyContent: "center" as const }}>
+      <Text style={{ fontSize: 28, marginBottom: 40, fontWeight: "bold" }}>
+        Welcome
+      </Text>
 
       <TextInput
         placeholder="Email"
@@ -29,33 +31,39 @@ export default function Login() {
         autoComplete="password"
       />
 
+      <TouchableOpacity style={styles.loginButton} onPress={() => {}}>
+        <Text style={styles.loginButtonText}>Sign Up</Text>
+      </TouchableOpacity>
 
-      <Button title="Sign Up" onPress={() => {}} />
-
-      <Link href="/">
+      <Link href="/" style={{ marginTop: 5 }}>
         <Text style={styles.link}>Already have an account? Sign in</Text>
       </Link>
     </View>
   );
 }
 
-const styles = {
+const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
     marginBottom: 12,
     padding: 10,
     borderRadius: 6,
   },
-  rememberRow: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-    alignItems: 'center' as const,
-    marginVertical: 12,
-  },
   link: {
-    marginTop: 16,
-    color: 'blue',
-    textAlign: 'center' as const,
+    color: "blue",
+    textAlign: "center" as const,
   },
-};
+  loginButton: {
+    backgroundColor: "#0066CC",
+    borderRadius: 5,
+    paddingVertical: 10,
+    alignItems: "center",
+    marginTop: 15,
+  },
+  loginButtonText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+});
