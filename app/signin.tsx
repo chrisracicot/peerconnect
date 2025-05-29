@@ -117,7 +117,7 @@ const LoginScreen = () => {
             </TouchableOpacity>
 
             
-              // Somewhere in your JSX
+            {/* Somewhere in your JSX */}
 <Link href="/signup">
   <Text style={{ color: 'blue' }}>Go to Signup</Text>
 </Link>
