@@ -11,6 +11,11 @@ import Checkbox from "expo-checkbox";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import { useRouter } from "expo-router";
+import { Link } from 'expo-router';
+
+
+
+
 
 // Define validation schema using Yup
 const validationSchema = Yup.object().shape({
@@ -111,13 +116,11 @@ const LoginScreen = () => {
               <Text style={styles.loginButtonText}>Login</Text>
             </TouchableOpacity>
 
-            <Text
-                  style={{ color: "#007AFF" }}
-                  onPress={() => console.log("Sign Up")}
-                >
-                  Sign Up
-                </Text>
-
+            
+              // Somewhere in your JSX
+<Link href="/signup">
+  <Text style={{ color: 'blue' }}>Go to Signup</Text>
+</Link>
             <View style={styles.checker}>
               {/* Privacy Policy Checkbox */}
               <Checkbox
@@ -127,6 +130,7 @@ const LoginScreen = () => {
                 }
                 style={styles.checkbox}
               />
+              
               <Text style={styles.checkboxLabel}>
                 You agree to our{" "}
                 <Text
@@ -242,3 +246,5 @@ const styles = StyleSheet.create({
 });
 
 export default LoginScreen;
+
+
