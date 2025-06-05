@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,25 +6,24 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+  ActivityIndicator,
 } from "react-native";
 import Checkbox from "expo-checkbox";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import { useRouter } from "expo-router";
-import { Link } from 'expo-router';
+import { supabase } from "../lib/supabase";
 
-
-
-
-
-// Define validation schema using Yup
 const validationSchema = Yup.object().shape({
-  saitId: Yup.string()
-    .required("SAIT ID is required")
-    .matches(/^\d{9}$/, "Must be a 9-digit number"),
+  email: Yup.string().email("Invalid email").required("Email is required"),
   password: Yup.string()
     .required("Password is required")
     .min(8, "Must be at least 8 characters"),
+  staySignedIn: Yup.boolean(),
   agreeToPolicy: Yup.boolean().oneOf(
     [true],
     "You must agree to the privacy policy"
@@ -33,133 +32,205 @@ const validationSchema = Yup.object().shape({
 
 const LoginScreen = () => {
   const router = useRouter();
+  const [submitError, setSubmitError] = useState("");
+
+  // Auto-redirect if already signed in
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data?.session?.user) {
+        router.replace("/field");
+      }
+    };
+
+    const timeout = setTimeout(checkSession, 300);
+    return () => clearTimeout(timeout);
+  }, []);
 
   return (
-    <View style={styles.container}>
-      {/* Your logo and title here */}
-      <Image
-        source={require("../assets/images/logo.png")}
-        style={styles.logo}
-      />
-      <Text style={styles.title}>Peer Connect</Text>
-      <Text style={styles.title2}>Connecting Students.</Text>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.container}>
+          <Image
+            source={require("../assets/images/logo.png")}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+          <Text style={styles.title}>Peer Connect</Text>
+          <Text style={styles.title2}>Connecting Students.</Text>
 
-      <Formik
-        initialValues={{
-          saitId: "",
-          password: "",
-          agreeToPolicy: false,
-          rememberMe: false,
-        }}
-        validationSchema={validationSchema}
-        onSubmit={(values) => {
-          // Handle form submission here
-          console.log("Submitting:", values);
-          router.push("/field");
-        }}
-      >
-        {({
-          handleChange,
-          handleBlur,
-          handleSubmit,
-          values,
-          errors,
-          touched,
-          setFieldValue,
-        }) => (
-          <>
-            {/* SAIT ID Input */}
-            <Text style={styles.label}>SAIT ID</Text>
-            <TextInput
-              style={[
-                styles.input,
-                touched.saitId && errors.saitId && styles.errorInput,
-              ]}
-              placeholder="000123456"
-              keyboardType="numeric"
-              onChangeText={handleChange("saitId")}
-              onBlur={handleBlur("saitId")}
-              value={values.saitId}
-            />
-            {touched.saitId && errors.saitId && (
-              <Text style={styles.errorText}>{errors.saitId}</Text>
-            )}
+          <Formik
+            initialValues={{
+              email: "",
+              password: "",
+              agreeToPolicy: false,
+              staySignedIn: false,
+            }}
+            validationSchema={validationSchema}
+            onSubmit={async (values, { setSubmitting }) => {
+              setSubmitError("");
 
-            {/* Password Input */}
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={[
-                styles.input,
-                touched.password && errors.password && styles.errorInput,
-              ]}
-              placeholder="Password"
-              secureTextEntry
-              onChangeText={handleChange("password")}
-              onBlur={handleBlur("password")}
-              value={values.password}
-            />
-            {touched.password && errors.password && (
-              <Text style={styles.errorText}>{errors.password}</Text>
-            )}
+              const { data, error } = await supabase.auth.signInWithPassword({
+                email: values.email,
+                password: values.password,
+              });
 
-            {/* Login Button */}
-            <TouchableOpacity
-              style={[
-                styles.loginButton,
-                !values.agreeToPolicy && styles.disabledButton,
-              ]}
-              onPress={() => {
-                handleSubmit();
-              }}
-              disabled={!values.agreeToPolicy}
-            >
-              <Text style={styles.loginButtonText}>Login</Text>
-            </TouchableOpacity>
-
-            
-            {/* Somewhere in your JSX */}
-<Link href="/signup" style={{marginTop: 5, marginBottom: 10}}>
-  <Text style={{ color: 'blue' }}>Go to Signup</Text>
-</Link>
-            <View style={styles.checker}>
-              {/* Privacy Policy Checkbox */}
-              <Checkbox
-                value={values.agreeToPolicy}
-                onValueChange={() =>
-                  setFieldValue("agreeToPolicy", !values.agreeToPolicy)
+              if (error) {
+                if (error.message.includes("Invalid login credentials")) {
+                  setSubmitError("Invalid email or password.");
+                } else if (error.message.includes("Email not confirmed")) {
+                  setSubmitError("Please confirm your email before logging in.");
+                } else {
+                  setSubmitError("Login failed. Please try again.");
                 }
-                style={styles.checkbox}
-              />
-              
-              <Text style={styles.checkboxLabel}>
-                You agree to our{" "}
-                <Text
-                  style={{ color: "#007AFF" }}
-                  onPress={() => console.log("Privacy Policy")}
+                setSubmitting(false);
+                return;
+              }
+
+              const user = data?.user;
+              if (user && !user.email_confirmed_at) {
+                setSubmitError("Email not confirmed. Check your inbox.");
+                setSubmitting(false);
+                return;
+              }
+
+              router.push("/field");
+              setSubmitting(false);
+            }}
+          >
+            {({
+              handleChange,
+              handleBlur,
+              handleSubmit,
+              values,
+              errors,
+              touched,
+              setFieldValue,
+              isSubmitting,
+            }) => (
+              <>
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    touched.email && errors.email && styles.errorInput,
+                  ]}
+                  placeholder="your.email@example.com"
+                  onChangeText={handleChange("email")}
+                  onBlur={handleBlur("email")}
+                  value={values.email}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  textContentType="emailAddress"
+                />
+                {touched.email && errors.email && (
+                  <Text style={styles.errorText}>{errors.email}</Text>
+                )}
+
+                <Text style={styles.label}>Password</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    touched.password && errors.password && styles.errorInput,
+                  ]}
+                  placeholder="Password"
+                  secureTextEntry
+                  onChangeText={handleChange("password")}
+                  onBlur={handleBlur("password")}
+                  value={values.password}
+                  autoComplete="password"
+                  textContentType="password"
+                />
+                {touched.password && errors.password && (
+                  <Text style={styles.errorText}>{errors.password}</Text>
+                )}
+
+                {submitError !== "" && (
+                  <Text style={styles.errorText}>{submitError}</Text>
+                )}
+
+                {/* Resend email confirmation link */}
+                {submitError.includes("confirm your email") && (
+                  <TouchableOpacity
+                    onPress={async () => {
+                      const { error } = await supabase.auth.resend({
+                        type: "signup",
+                        email: values.email,
+                      });
+                      if (!error) {
+                        alert("Confirmation email resent.");
+                      }
+                    }}
+                  >
+                    <Text style={styles.link}>Resend confirmation email</Text>
+                  </TouchableOpacity>
+                )}
+
+                <TouchableOpacity
+                  style={[
+                    styles.loginButton,
+                    !values.agreeToPolicy && styles.disabledButton,
+                  ]}
+                  onPress={() => handleSubmit()}
+                  disabled={!values.agreeToPolicy || isSubmitting}
                 >
-                  privacy policy.
-                </Text>
-              </Text>
-            </View>
-            {/* Remember Me Checkbox */}
-            <View style={styles.checker}>
-              <Checkbox
-                value={values.rememberMe}
-                onValueChange={() =>
-                  setFieldValue("rememberMe", !values.rememberMe)
-                }
-                style={styles.checkbox}
-              />
-              <Text style={styles.checkboxLabel}>Remember Me</Text>
-            </View>
-          </>
-        )}
-      </Formik>
-    </View>
+                  {isSubmitting ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.loginButtonText}>Login</Text>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => router.push("/signup")}
+                  style={{ marginTop: 5, marginBottom: 10 }}
+                >
+                  <Text style={styles.link}>Go to Signup</Text>
+                </TouchableOpacity>
+
+                <View style={styles.checker}>
+                  <Checkbox
+                    value={values.agreeToPolicy}
+                    onValueChange={() =>
+                      setFieldValue("agreeToPolicy", !values.agreeToPolicy)
+                    }
+                    style={styles.checkbox}
+                  />
+                  <Text style={styles.checkboxLabel}>
+                    You agree to our{" "}
+                    <Text
+                      style={{ color: "#007AFF" }}
+                      onPress={() => console.log("Privacy Policy")}
+                    >
+                      privacy policy
+                    </Text>
+                    .
+                  </Text>
+                </View>
+
+                <View style={styles.checker}>
+                  <Checkbox
+                    value={values.staySignedIn}
+                    onValueChange={() =>
+                      setFieldValue("staySignedIn", !values.staySignedIn)
+                    }
+                    style={styles.checkbox}
+                  />
+                  <Text style={styles.checkboxLabel}>Stay signed in</Text>
+                </View>
+              </>
+            )}
+          </Formik>
+        </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 };
 
-// Add error styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -169,6 +240,8 @@ const styles = StyleSheet.create({
   },
   logo: {
     alignSelf: "center",
+    width: 120,
+    height: 120,
     marginBottom: 20,
   },
   title: {
@@ -182,13 +255,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 30,
-  },
-
-  subtitle: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: "center",
-    marginBottom: 40,
   },
   label: {
     fontSize: 12,
@@ -217,6 +283,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
+  disabledButton: {
+    backgroundColor: "#ccc",
+  },
   checkbox: {
     marginRight: 10,
   },
@@ -225,7 +294,11 @@ const styles = StyleSheet.create({
     color: "#666",
     marginLeft: 10,
   },
-  // ... existing styles ...
+  checker: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+  },
   errorInput: {
     borderColor: "red",
     borderWidth: 1,
@@ -235,16 +308,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 10,
   },
-  disabledButton: {
-    backgroundColor: "#ccc",
-  },
-  checker: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 10,
+  link: {
+    color: "blue",
+    fontSize: 13,
+    textAlign: "center",
   },
 });
 
 export default LoginScreen;
-
-
