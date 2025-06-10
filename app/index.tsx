@@ -34,18 +34,24 @@ const LoginScreen = () => {
   const router = useRouter();
   const [submitError, setSubmitError] = useState("");
 
-  // Auto-redirect if already signed in
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data?.session?.user) {
-        router.replace("/field");
-      }
-    };
 
-    const timeout = setTimeout(checkSession, 300);
-    return () => clearTimeout(timeout);
-  }, []);
+  // Uncomment this section if you want to auto-redirect if already signed in
+ 
+  // // Auto-redirect if already signed in
+  // useEffect(() => {
+  //   const checkSession = async () => {
+  //     const { data } = await supabase.auth.getSession();
+  //     if (data?.session?.user) {
+  //       router.replace("/browse");
+  //     }
+  //   };
+
+  //   const timeout = setTimeout(checkSession, 300);
+  //   return () => clearTimeout(timeout);
+  // }, []);
+
+
+
 
   return (
     <KeyboardAvoidingView
@@ -60,7 +66,7 @@ const LoginScreen = () => {
             resizeMode="contain"
           />
           <Text style={styles.title}>Peer Connect</Text>
-          <Text style={styles.title2}>Connecting Students.</Text>
+          <Text style={styles.title2}>Learn Together, Grow Together</Text>
 
           <Formik
             initialValues={{
@@ -97,7 +103,7 @@ const LoginScreen = () => {
                 return;
               }
 
-              router.push("/field");
+              router.push("/browse");
               setSubmitting(false);
             }}
           >
