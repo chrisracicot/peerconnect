@@ -34,9 +34,9 @@ export default function TabLayout() {
         }}
       >
         <Tabs.Screen
-          name="index"
+          name="browse"
           options={{
-            title: "Assist",
+            title: "Browse",
             tabBarIcon: ({ color }) => (
               <FontAwesome6 name="handshake" size={24} color={color} />
             ),
@@ -44,7 +44,7 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="two"
+          name="ask"
           options={{
             title: "Ask",
             tabBarIcon: ({ color }) => (
@@ -54,9 +54,19 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="three"
+          name="messages"
           options={{
-            title: "Settings",
+            title: "Messages",
+            tabBarIcon: ({ color }) => (
+              <Feather name="settings" size={24} color={color} />
+            ),
+            tabBarActiveTintColor: "#A6192E",
+          }}
+        />
+                <Tabs.Screen
+          name="bookings"
+          options={{
+            title: "Bookings",
             tabBarIcon: ({ color }) => (
               <Feather name="settings" size={24} color={color} />
             ),
@@ -64,7 +74,7 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="four"
+          name="profile"
           options={{
             title: "Profile",
             tabBarIcon: ({ color }) => (

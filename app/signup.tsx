@@ -74,7 +74,7 @@ export default function Signup() {
                   setSubmitError("Account created, but login failed.");
                   router.push("/");
                 } else {
-                  router.replace("/field");
+                  router.replace("/browse");
                 }
               } else {
                 router.push("/"); // Go to login
