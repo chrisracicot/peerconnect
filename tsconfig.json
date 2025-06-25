@@ -2,16 +2,28 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
+      "@components/*": [
+        "components/*"
+      ],
+      "@screens/*": [
+        "app/screens/*"
+      ],
+      "@tabs/*": [
+        "app/(tabs)/*"
+      ],
+      "@context/*": [
+        "app/context/*"
+      ],
+      "@constants/*": [
+        "constants/*"
       ]
     }
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
+    "**/*",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-, "app/context/FormContext.jsx", "app/(tabs)/two.jsx"  ]
+  ]
 }

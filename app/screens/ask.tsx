@@ -10,26 +10,24 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
-import { useFormData } from "../context/FormContext";
-import { Formik } from "formik";
+import { useFormData } from '@context/FormContext';
+import { Formik, FormikHelpers } from "formik";
 import * as Yup from "yup";
 
-// Sample data for dropdowns
 const courses = ["Select", "CPRG 213", "CPNT 217", "COMM 238"];
 const weeks = ["Select", "Week 1", "Week 2", "Week 3"];
 const tags = ["Select", "Programming", "Networking", "Design"];
 
+interface FormValues {
+  course: string;
+  week: string;
+  description: string;
+  tags: string[];
+}
+
 const validationSchema = Yup.object().shape({
-  course: Yup.string().test(
-    "course-check",
-    "Please select a course",
-    (value) => value !== "Select"
-  ),
-  week: Yup.string().test(
-    "week-check",
-    "Please select a week",
-    (value) => value !== "Select"
-  ),
+  course: Yup.string().test("course-check", "Please select a course", (value) => value !== "Select"),
+  week: Yup.string().test("week-check", "Please select a week", (value) => value !== "Select"),
   description: Yup.string()
     .required("Description is required")
     .max(200, "Description must be 200 characters or less"),
@@ -38,36 +36,44 @@ const validationSchema = Yup.object().shape({
     .min(1, "Please select a tag"),
 });
 
-const FormScreen = () => {
+export default function AskScreen() {
   const router = useRouter();
-  const { setRequestData } = useFormData();
+  const { addRequest } = useFormData(); // use addRequest as per best-practice FormContext
 
-  const initialValues = {
+  const initialValues: FormValues = {
     course: "Select",
     week: "Select",
     description: "",
     tags: ["Select"],
   };
 
-  const handleSubmit = (values, { resetForm }) => {
-    console.log("Submitted Values:", values);
-    setRequestData(values);
-    resetForm();
-    router.push({ pathname: "/(tabs)" });
+const handleSubmit = (
+  values: FormValues,
+  { resetForm }: FormikHelpers<FormValues>
+) => {
+  const requestData = {
+    ...values,
+    id: Date.now(), // ✅ now a number
+    title: `${values.course} - ${values.week}`,
   };
+  addRequest(requestData);
+  resetForm();
+  router.push("/(tabs)/browse");
+};
+
 
   return (
     <ScrollView style={styles.container}>
-      {/* Profile Section */}
+      {/* Profile Header */}
       <View style={styles.profileContainer}>
         <Image
           source={require("../../assets/images/icon.png")}
           style={styles.avatar}
         />
-        <Text style={styles.username}>USER NAME</Text>
+        <Text style={styles.username}>User</Text>
       </View>
 
-      <Formik
+      <Formik<FormValues>
         initialValues={initialValues}
         validationSchema={validationSchema}
         onSubmit={handleSubmit}
@@ -127,9 +133,7 @@ const FormScreen = () => {
                 onChangeText={handleChange("description")}
                 onBlur={handleBlur("description")}
               />
-              <Text style={styles.charCount}>
-                {`${values.description.length}/200`}
-              </Text>
+              <Text style={styles.charCount}>{`${values.description.length}/200`}</Text>
             </View>
             {touched.description && errors.description && (
               <Text style={styles.error}>{errors.description}</Text>
@@ -152,11 +156,8 @@ const FormScreen = () => {
               <Text style={styles.error}>{errors.tags}</Text>
             )}
 
-            {/* SUBMIT BUTTON */}
-            <TouchableOpacity
-              style={styles.submitButton}
-              onPress={handleSubmit}
-            >
+            {/* SUBMIT */}
+            <TouchableOpacity style={styles.submitButton} onPress={() => handleSubmit()}>
               <Text style={styles.submitText}>Submit</Text>
             </TouchableOpacity>
           </View>
@@ -164,7 +165,7 @@ const FormScreen = () => {
       </Formik>
     </ScrollView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -248,5 +249,3 @@ const styles = StyleSheet.create({
     marginLeft: 80,
   },
 });
-
-export default FormScreen;
