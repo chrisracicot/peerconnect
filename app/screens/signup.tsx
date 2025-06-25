@@ -15,7 +15,8 @@ import { useState } from "react";
 import { useRouter } from "expo-router";
 import * as Yup from "yup";
 import { Formik } from "formik";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../../lib/supabase";
+import { useFormData } from "@context/FormContext";
 
 const validationSchema = Yup.object().shape({
   email: Yup.string().email("Invalid email").required("Email is required"),

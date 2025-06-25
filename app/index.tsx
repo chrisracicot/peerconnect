@@ -191,12 +191,13 @@ const LoginScreen = () => {
                   )}
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  onPress={() => router.push("/signup")}
-                  style={{ marginTop: 5, marginBottom: 10 }}
-                >
-                  <Text style={styles.link}>Go to Signup</Text>
-                </TouchableOpacity>
+<TouchableOpacity
+  onPress={() => router.push("/screens/signup")}
+  style={{ marginTop: 5, marginBottom: 10 }}
+>
+  <Text style={styles.link}>Go to Signup</Text>
+</TouchableOpacity>
+
 
                 <View style={styles.checker}>
                   <Checkbox
