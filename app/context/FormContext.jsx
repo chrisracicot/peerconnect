@@ -1,3 +1,4 @@
+// FormContext.jsx
 import React, { createContext, useContext, useState } from "react";
 
 const FormContext = createContext();
@@ -5,8 +6,8 @@ const FormContext = createContext();
 export const FormDataProvider = ({ children }) => {
   const [requests, setRequests] = useState([]);
 
-  const addRequest = (data) => {
-    setRequests((prev) => [...prev, data]);
+  const addRequest = (request) => {
+    setRequests((prev) => [...prev, request]);
   };
 
   return (
@@ -19,7 +20,7 @@ export const FormDataProvider = ({ children }) => {
 export const useFormData = () => {
   const context = useContext(FormContext);
   if (!context) {
-    throw new Error("useFormData must be used within a FormProvider");
+    throw new Error("useFormData must be used within a FormDataProvider");
   }
   return context;
 };

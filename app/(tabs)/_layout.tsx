@@ -1,3 +1,4 @@
+// app/%28tabs%29/_layout.tsx
 import React from "react";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Link, Tabs } from "expo-router";
@@ -9,7 +10,7 @@ import { useClientOnlyValue } from "@/components/useClientOnlyValue";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import Feather from "@expo/vector-icons/Feather";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { FormDataProvider } from "../context/FormContext";
+// import { FormDataProvider } from "../context/FormContext";
 
 // You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
@@ -23,7 +24,7 @@ export default function TabLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <FormDataProvider>
+   
       <Tabs
         screenOptions={{
           tabBarInactiveBackgroundColor: "#F6F7F9",
@@ -88,6 +89,6 @@ export default function TabLayout() {
           }}
         />
       </Tabs>
-    </FormDataProvider>
+
   );
 }
