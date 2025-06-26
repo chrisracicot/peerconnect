@@ -1,3 +1,4 @@
+// app/_layout.tsx
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
@@ -7,6 +8,8 @@ import "react-native-reanimated";
 
 // Removed useColorScheme and ThemeProvider
 // import { useColorScheme } from "@/components/useColorScheme";
+
+import { FormDataProvider } from "./context/FormContext";
 
 export {
   ErrorBoundary,
@@ -43,6 +46,25 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   return (
+<<<<<<< HEAD
+    <FormDataProvider>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="field" options={{ headerShown: false }} />
+          <Stack.Screen name="courses" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+          <Stack.Screen name="askForm" options={{ title: "Create Request" }} />
+          <Stack.Screen
+            name="context/FormContext"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+      </ThemeProvider>
+    </FormDataProvider>
+=======
     <Stack>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="field" options={{ headerShown: false }} />
@@ -50,5 +72,6 @@ function RootLayoutNav() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="modal" options={{ presentation: "modal" }} />
     </Stack>
+>>>>>>> main
   );
 }
