@@ -227,7 +227,7 @@ const Courses = () => {
           disabled={selectedCourses.length === 0}
           onPress={() => {
             console.log("Selected:", selectedCourses);
-            router.push("/(tabs)");
+            router.push("/");
           }}
         >
           <Text style={styles.doneButtonText}>Done</Text>

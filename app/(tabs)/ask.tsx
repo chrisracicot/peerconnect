@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // ask.tsx
 import React from "react";
 import {
@@ -105,3 +106,6 @@ const styles = StyleSheet.create({
 });
 
 export default ListScreen;
+=======
+export { default } from '@screens/ask';
+>>>>>>> main

@@ -29,6 +29,7 @@
     "expo-system-ui": "~5.0.9",
     "expo-web-browser": "~14.2.0",
     "formik": "^2.4.6",
+<<<<<<< HEAD
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-native": "0.79.4",
@@ -36,11 +37,26 @@
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
     "react-native-web": "^0.20.0",
+=======
+    "lucide-react": "^0.523.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-native": "0.76.7",
+    "react-native-reanimated": "~3.16.1",
+    "react-native-safe-area-context": "4.12.0",
+    "react-native-screens": "~4.4.0",
+    "react-native-web": "~0.19.13",
+>>>>>>> main
     "yup": "^1.6.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+<<<<<<< HEAD
     "@types/react": "~19.0.10",
+=======
+    "@types/react": "~18.3.12",
+    "babel-plugin-module-resolver": "^5.0.2",
+>>>>>>> main
     "jest": "^29.2.1",
     "jest-expo": "~53.0.7",
     "react-test-renderer": "18.3.1",
