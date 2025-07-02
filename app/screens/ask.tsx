@@ -1,392 +1,258 @@
-// askForm.tsx
-import React, { useState } from "react";
+// ask.tsx
+import React from "react";
 import {
   View,
   Text,
   StyleSheet,
-  TextInput,
   ScrollView,
   TouchableOpacity,
-  Platform,
+  Alert,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
-<<<<<<<< HEAD:app/askForm.tsx
-import { useFormData } from "./context/FormContext";
-========
-import { useFormData } from '@context/FormContext';
->>>>>>>> main:app/screens/ask.tsx
-import { Formik, FormikHelpers } from "formik";
-import * as Yup from "yup";
+import { useFormData, RequestData } from "../context/FormContext"; // Import RequestData type
 
-const courses = ["Select", "CPRG 213", "CPNT 217", "COMM 238"];
-const weeks = ["Select", "Week 1", "Week 2", "Week 3"];
-const tags = ["Select", "Programming", "Networking", "Design"];
+// Removed RequestItem interface - using RequestData from FormContext instead
 
-<<<<<<<< HEAD:app/askForm.tsx
-// Define the form values interface
-interface FormValues {
-  course: string;
-  week: string;
-  title: string;
-========
-interface FormValues {
-  course: string;
-  week: string;
->>>>>>>> main:app/screens/ask.tsx
-  description: string;
-  tags: string[];
-}
-
-const validationSchema = Yup.object().shape({
-  course: Yup.string().test("course-check", "Please select a course", (value) => value !== "Select"),
-  week: Yup.string().test("week-check", "Please select a week", (value) => value !== "Select"),
-  description: Yup.string()
-    .required("Description is required")
-    .max(200, "Description must be 200 characters or less"),
-  tags: Yup.array()
-    .of(Yup.string().notOneOf(["Select"], "Please select a valid tag"))
-    .min(1, "Please select a tag"),
-});
-
-export default function AskScreen() {
+const ListScreen = () => {
   const router = useRouter();
-<<<<<<<< HEAD:app/askForm.tsx
-  const { addRequest } = useFormData();
-========
-  const { addRequest } = useFormData(); // use addRequest as per best-practice FormContext
->>>>>>>> main:app/screens/ask.tsx
+  const {
+    activeRequests,
+    expiredRequests,
+    deleteRequest,
+    fetchRequests,
+    loading,
+  } = useFormData();
 
-  const initialValues: FormValues = {
-    course: "Select",
-    week: "Select",
-    title: "",
-    description: "",
-    tags: [],
+  // Handle delete with confirmation
+  const handleDelete = (requestId: number, title: string) => {
+    Alert.alert(
+      "Delete Request",
+      `Are you sure you want to delete "${title}"?`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => deleteRequest(requestId),
+        },
+      ]
+    );
   };
 
-<<<<<<<< HEAD:app/askForm.tsx
-  const handleSubmit = (
-    values: FormValues,
-    { resetForm }: FormikHelpers<FormValues>
-  ) => {
-    const newRequest = {
-      id: Date.now(),
-      ...values,
-    };
-    addRequest(newRequest);
-    resetForm();
-    router.push( "./ask"); 
+  // Format description to show only 2 lines
+  const formatDescription = (description: string, maxLength: number = 100) => {
+    if (description.length <= maxLength) {
+      return description;
+    }
+    return description.substring(0, maxLength) + "...";
   };
 
-  const handleCancel = () => {
-    router.push("./ask"); 
-  };
-
-  // Tag selector component with proper typing
-  interface TagSelectorProps {
-    selectedTags: string[];
-    setSelectedTags: (tags: string[]) => void;
-  }
-
-  const TagSelector: React.FC<TagSelectorProps> = ({
-    selectedTags,
-    setSelectedTags,
-  }) => {
-    const [isPickerVisible, setPickerVisible] = useState(false);
-    const [pickerValue, setPickerValue] = useState(tags[0]);
-
-    const handleAddTag = () => {
-      if (pickerValue !== "Select" && !selectedTags.includes(pickerValue)) {
-        setSelectedTags([...selectedTags, pickerValue]);
-      }
-      setPickerVisible(false);
-    };
-
-    const handleRemoveTag = (tagToRemove: string) => {
-      setSelectedTags(selectedTags.filter((tag) => tag !== tagToRemove));
-    };
+  // Render a request card - now using RequestData type
+  const renderRequestCard = (item: RequestData) => {
+    // Handle case where request_id might be undefined
+    if (!item.request_id) {
+      return null;
+    }
 
     return (
-      <View style={styles.tagContainer}>
-        <Text style={styles.tagLabel}>TAGS</Text>
-        <View style={styles.tagRow}>
-          {selectedTags.map((tag) => (
-            <TouchableOpacity
-              key={tag}
-              onPress={() => handleRemoveTag(tag)}
-              style={styles.tagButton}
-            >
-              <Text style={styles.tagText}>{tag} ×</Text>
-            </TouchableOpacity>
-          ))}
-          {!isPickerVisible ? (
-            <TouchableOpacity
-              onPress={() => setPickerVisible(true)}
-              style={styles.tagButton}
-            >
-              <Text style={styles.tagText}>Add a tag +</Text>
-            </TouchableOpacity>
+      <TouchableOpacity
+        key={item.request_id}
+        style={styles.card}
+        onPress={() => handleDelete(item.request_id!, item.title)} // Using non-null assertion since we checked above
+        activeOpacity={0.7}
+      >
+        <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+          {item.title}
+        </Text>
+        <Text style={styles.course}>{item.course_id}</Text>
+        <Text style={styles.description} numberOfLines={2} ellipsizeMode="tail">
+          {formatDescription(item.description)}
+        </Text>
+        <Text style={styles.date}>
+          Created: {new Date(item.create_date).toLocaleDateString()}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.scroll}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={fetchRequests}
+            colors={[styles.createButton.backgroundColor]}
+          />
+        }
+      >
+        {/* Active Requests Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Active Requests</Text>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator
+                size="large"
+                color={styles.createButton.backgroundColor}
+              />
+              <Text style={styles.loadingText}>Loading requests...</Text>
+            </View>
+          ) : activeRequests.length > 0 ? (
+            activeRequests.map(renderRequestCard)
           ) : (
-            <View style={styles.tagPickerContainer}>
-              <Picker
-                selectedValue={pickerValue}
-                style={styles.tagPicker}
-                onValueChange={(itemValue) =>
-                  setPickerValue(itemValue as string)
-                }
-              >
-                {tags
-                  .filter((tag) => !selectedTags.includes(tag))
-                  .map((tag) => (
-                    <Picker.Item key={tag} label={tag} value={tag} />
-                  ))}
-              </Picker>
-              <TouchableOpacity onPress={handleAddTag} style={styles.tagButton}>
-                <Text style={styles.tagText}>Add</Text>
-              </TouchableOpacity>
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No active requests</Text>
+              <Text style={styles.emptySubtext}>
+                Create your first request to get started!
+              </Text>
             </View>
           )}
         </View>
-      </View>
-    );
-========
-const handleSubmit = (
-  values: FormValues,
-  { resetForm }: FormikHelpers<FormValues>
-) => {
-  const requestData = {
-    ...values,
-    id: Date.now(), // ✅ now a number
-    title: `${values.course} - ${values.week}`,
->>>>>>>> main:app/screens/ask.tsx
-  };
-  addRequest(requestData);
-  resetForm();
-  router.push("/(tabs)/browse");
-};
 
+        {/* Expired Requests Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Expired Requests</Text>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator
+                size="large"
+                color={styles.createButton.backgroundColor}
+              />
+            </View>
+          ) : expiredRequests.length > 0 ? (
+            expiredRequests.map(renderRequestCard)
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No expired requests</Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
 
-  return (
-    <ScrollView style={styles.container}>
-<<<<<<<< HEAD:app/askForm.tsx
-      <Formik
-========
-      {/* Profile Header */}
-      <View style={styles.profileContainer}>
-        <Image
-          source={require("../../assets/images/icon.png")}
-          style={styles.avatar}
-        />
-        <Text style={styles.username}>User</Text>
-      </View>
-
-      <Formik<FormValues>
->>>>>>>> main:app/screens/ask.tsx
-        initialValues={initialValues}
-        validationSchema={validationSchema}
-        onSubmit={handleSubmit}
+      <TouchableOpacity
+        style={[styles.createButton, loading && styles.disabledButton]}
+        onPress={() => router.push("./askForm")}
+        disabled={loading}
       >
-        {({
-          handleChange,
-          handleBlur,
-          handleSubmit,
-          setFieldValue,
-          values,
-          errors,
-          touched,
-        }) => (
-          <View style={styles.formContainer}>
-            {/* COURSE */}
-            <View style={styles.fieldRow}>
-              <Text style={styles.label}>COURSE</Text>
-              <Picker
-                selectedValue={values.course}
-                onValueChange={(value) => setFieldValue("course", value)}
-                style={styles.input}
-              >
-                {courses.map((course) => (
-                  <Picker.Item key={course} label={course} value={course} />
-                ))}
-              </Picker>
-            </View>
-            {touched.course && errors.course && (
-              <Text style={styles.error}>{errors.course}</Text>
-            )}
-
-            {/* TITLE */}
-            <View style={styles.titleContainer}>
-              <Text style={styles.label}>TITLE</Text>
-              <TextInput
-                style={styles.textArea}
-                numberOfLines={1}
-                value={values.title}
-                onChangeText={handleChange("title")}
-                onBlur={handleBlur("title")}
-              />
-            </View>
-
-            {/* DESCRIPTION */}
-            <View style={styles.descriptionContainer}>
-              <Text style={styles.label}>DESCRIPTION</Text>
-              <TextInput
-                style={styles.textArea}
-                multiline
-                numberOfLines={4}
-                value={values.description}
-                onChangeText={handleChange("description")}
-                onBlur={handleBlur("description")}
-              />
-              <Text style={styles.charCount}>{`${values.description.length}/200`}</Text>
-            </View>
-            {touched.description && errors.description && (
-              <Text style={styles.error}>{errors.description}</Text>
-            )}
-
-            {/* TAGS */}
-            <TagSelector
-              selectedTags={values.tags}
-              setSelectedTags={(tags) => setFieldValue("tags", tags)}
-            />
-            {touched.tags && errors.tags && (
-              <Text style={styles.error}>{errors.tags}</Text>
-            )}
-
-<<<<<<<< HEAD:app/askForm.tsx
-            {/* SUBMIT BUTTON */}
-            <TouchableOpacity
-              style={styles.submitButton}
-              onPress={handleSubmit as any}
-            >
-========
-            {/* SUBMIT */}
-            <TouchableOpacity style={styles.submitButton} onPress={() => handleSubmit()}>
->>>>>>>> main:app/screens/ask.tsx
-              <Text style={styles.submitText}>Submit</Text>
-            </TouchableOpacity>
-
-            {/* CANCEL BUTTON */}
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={handleCancel}
-            >
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </Formik>
-    </ScrollView>
+        <Text style={[styles.createText, loading && styles.disabledText]}>
+          Create New Request
+        </Text>
+      </TouchableOpacity>
+    </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
-    padding: 20,
+    backgroundColor: "#fff",
   },
-  formContainer: {
-    marginBottom: 20,
-    padding: 20,
-  },
-  fieldRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 12,
-    color: "#666",
-    marginRight: 10,
-    width: 80,
-    fontWeight: "bold",
-  },
-  input: {
+  scroll: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: "#000000",
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
   },
-  titleContainer: {
-    marginBottom: 20,
+  section: {
+    padding: 16,
   },
-  textArea: {
-    marginTop: 10,
-    borderWidth: 1,
-    borderColor: "#DDD",
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    minHeight: 40,
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: "#0066CC",
+    paddingBottom: 8,
   },
-  descriptionContainer: {
-    marginBottom: 20,
+  card: {
+    backgroundColor: "#F2F2F2",
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: "#0066CC",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
+    elevation: 3,
   },
-  charCount: {
-    position: "absolute",
-    right: 10,
-    bottom: 5,
+  title: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 4,
+  },
+  course: {
+    fontSize: 14,
+    color: "#0066CC",
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  description: {
+    fontSize: 14,
+    color: "#666",
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  date: {
+    fontSize: 12,
+    color: "#999",
+    fontStyle: "italic",
+  },
+  createButton: {
+    margin: 16,
+    backgroundColor: "#0066CC",
+    padding: 14,
+    borderRadius: 8,
+    alignItems: "center",
+    minHeight: 50,
+    justifyContent: "center",
+  },
+  disabledButton: {
+    backgroundColor: "#cccccc",
+  },
+  createText: {
+    color: "#FFF",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  disabledText: {
     color: "#999",
   },
-  submitButton: {
-    backgroundColor: "#0066CC",
-    padding: 15,
-    borderRadius: 5,
+  loadingContainer: {
     alignItems: "center",
+    paddingVertical: 20,
   },
-  submitText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  cancelButton: {
+  loadingText: {
     marginTop: 10,
-    alignItems: "center",
-  },
-  cancelText: {
-    color: "#888",
-  },
-  error: {
-    color: "red",
-    marginBottom: 10,
-    fontSize: 12,
-    marginLeft: 80,
-  },
-  tagContainer: {
-    marginBottom: 20,
-  },
-  tagLabel: {
-    fontSize: 12,
     color: "#666",
-    marginBottom: 10,
-    fontWeight: "bold",
+    fontSize: 14,
   },
-  tagRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
+  emptyContainer: {
     alignItems: "center",
+    paddingVertical: 30,
+    paddingHorizontal: 20,
   },
-  tagButton: {
-    backgroundColor: "#FFF",
-    borderWidth: 1,
-    borderColor: "#000",
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    margin: 4,
+  emptyText: {
+    fontSize: 16,
+    color: "#666",
+    fontWeight: "600",
+    marginBottom: 8,
   },
-  tagText: {
-    fontSize: 12,
-    color: "#000",
-  },
-  tagPickerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  tagPicker: {
-    height: Platform.OS === "android" ? 40 : undefined,
-    width: 150,
+  emptySubtext: {
+    fontSize: 14,
+    color: "#999",
+    textAlign: "center",
+    lineHeight: 20,
   },
 });
+
+export default ListScreen;

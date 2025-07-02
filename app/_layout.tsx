@@ -46,9 +46,7 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   return (
-<<<<<<< HEAD
     <FormDataProvider>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="index" options={{ headerShown: false }} />
           <Stack.Screen name="field" options={{ headerShown: false }} />
@@ -62,16 +60,6 @@ function RootLayoutNav() {
           />
           <Stack.Screen name="+not-found" />
         </Stack>
-      </ThemeProvider>
     </FormDataProvider>
-=======
-    <Stack>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="field" options={{ headerShown: false }} />
-      <Stack.Screen name="courses" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-    </Stack>
->>>>>>> main
   );
 }

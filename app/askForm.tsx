@@ -8,181 +8,72 @@ import {
   ScrollView,
   TouchableOpacity,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
-<<<<<<<< HEAD:app/askForm.tsx
 import { useFormData } from "./context/FormContext";
-========
-import { useFormData } from '@context/FormContext';
->>>>>>>> main:app/screens/ask.tsx
 import { Formik, FormikHelpers } from "formik";
 import * as Yup from "yup";
 
-const courses = ["Select", "CPRG 213", "CPNT 217", "COMM 238"];
-const weeks = ["Select", "Week 1", "Week 2", "Week 3"];
-const tags = ["Select", "Programming", "Networking", "Design"];
+// Sample data for dropdowns - sorted alphabetically
+const courses = ["Select", "COMM 238", "CPNT 217", "CPRG 213"].sort((a, b) => {
+  if (a === "Select") return -1;
+  if (b === "Select") return 1;
+  return a.localeCompare(b);
+});
 
-<<<<<<<< HEAD:app/askForm.tsx
 // Define the form values interface
 interface FormValues {
   course: string;
-  week: string;
   title: string;
-========
-interface FormValues {
-  course: string;
-  week: string;
->>>>>>>> main:app/screens/ask.tsx
   description: string;
-  tags: string[];
 }
 
 const validationSchema = Yup.object().shape({
-  course: Yup.string().test("course-check", "Please select a course", (value) => value !== "Select"),
-  week: Yup.string().test("week-check", "Please select a week", (value) => value !== "Select"),
+  course: Yup.string().test(
+    "course-check",
+    "Please select a course",
+    (value) => value !== "Select"
+  ),
+  title: Yup.string()
+    .required("Title is required")
+    .max(50, "Title must be 50 characters or less"),
   description: Yup.string()
     .required("Description is required")
     .max(200, "Description must be 200 characters or less"),
-  tags: Yup.array()
-    .of(Yup.string().notOneOf(["Select"], "Please select a valid tag"))
-    .min(1, "Please select a tag"),
 });
 
-export default function AskScreen() {
+const FormScreen = () => {
   const router = useRouter();
-<<<<<<<< HEAD:app/askForm.tsx
-  const { addRequest } = useFormData();
-========
-  const { addRequest } = useFormData(); // use addRequest as per best-practice FormContext
->>>>>>>> main:app/screens/ask.tsx
+  const { addRequest, loading } = useFormData();
 
   const initialValues: FormValues = {
     course: "Select",
-    week: "Select",
     title: "",
     description: "",
-    tags: [],
   };
 
-<<<<<<<< HEAD:app/askForm.tsx
-  const handleSubmit = (
+  const handleSubmit = async (
     values: FormValues,
     { resetForm }: FormikHelpers<FormValues>
   ) => {
-    const newRequest = {
-      id: Date.now(),
-      ...values,
-    };
-    addRequest(newRequest);
+    await addRequest({
+      title: values.title,
+      description: values.description,
+      course: values.course,
+    });
     resetForm();
-    router.push( "./ask"); 
+    router.push("./ask");
   };
 
   const handleCancel = () => {
-    router.push("./ask"); 
+    router.push("./ask");
   };
-
-  // Tag selector component with proper typing
-  interface TagSelectorProps {
-    selectedTags: string[];
-    setSelectedTags: (tags: string[]) => void;
-  }
-
-  const TagSelector: React.FC<TagSelectorProps> = ({
-    selectedTags,
-    setSelectedTags,
-  }) => {
-    const [isPickerVisible, setPickerVisible] = useState(false);
-    const [pickerValue, setPickerValue] = useState(tags[0]);
-
-    const handleAddTag = () => {
-      if (pickerValue !== "Select" && !selectedTags.includes(pickerValue)) {
-        setSelectedTags([...selectedTags, pickerValue]);
-      }
-      setPickerVisible(false);
-    };
-
-    const handleRemoveTag = (tagToRemove: string) => {
-      setSelectedTags(selectedTags.filter((tag) => tag !== tagToRemove));
-    };
-
-    return (
-      <View style={styles.tagContainer}>
-        <Text style={styles.tagLabel}>TAGS</Text>
-        <View style={styles.tagRow}>
-          {selectedTags.map((tag) => (
-            <TouchableOpacity
-              key={tag}
-              onPress={() => handleRemoveTag(tag)}
-              style={styles.tagButton}
-            >
-              <Text style={styles.tagText}>{tag} ×</Text>
-            </TouchableOpacity>
-          ))}
-          {!isPickerVisible ? (
-            <TouchableOpacity
-              onPress={() => setPickerVisible(true)}
-              style={styles.tagButton}
-            >
-              <Text style={styles.tagText}>Add a tag +</Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.tagPickerContainer}>
-              <Picker
-                selectedValue={pickerValue}
-                style={styles.tagPicker}
-                onValueChange={(itemValue) =>
-                  setPickerValue(itemValue as string)
-                }
-              >
-                {tags
-                  .filter((tag) => !selectedTags.includes(tag))
-                  .map((tag) => (
-                    <Picker.Item key={tag} label={tag} value={tag} />
-                  ))}
-              </Picker>
-              <TouchableOpacity onPress={handleAddTag} style={styles.tagButton}>
-                <Text style={styles.tagText}>Add</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </View>
-    );
-========
-const handleSubmit = (
-  values: FormValues,
-  { resetForm }: FormikHelpers<FormValues>
-) => {
-  const requestData = {
-    ...values,
-    id: Date.now(), // ✅ now a number
-    title: `${values.course} - ${values.week}`,
->>>>>>>> main:app/screens/ask.tsx
-  };
-  addRequest(requestData);
-  resetForm();
-  router.push("/(tabs)/browse");
-};
-
 
   return (
     <ScrollView style={styles.container}>
-<<<<<<<< HEAD:app/askForm.tsx
       <Formik
-========
-      {/* Profile Header */}
-      <View style={styles.profileContainer}>
-        <Image
-          source={require("../../assets/images/icon.png")}
-          style={styles.avatar}
-        />
-        <Text style={styles.username}>User</Text>
-      </View>
-
-      <Formik<FormValues>
->>>>>>>> main:app/screens/ask.tsx
         initialValues={initialValues}
         validationSchema={validationSchema}
         onSubmit={handleSubmit}
@@ -204,6 +95,7 @@ const handleSubmit = (
                 selectedValue={values.course}
                 onValueChange={(value) => setFieldValue("course", value)}
                 style={styles.input}
+                enabled={!loading}
               >
                 {courses.map((course) => (
                   <Picker.Item key={course} label={course} value={course} />
@@ -223,8 +115,16 @@ const handleSubmit = (
                 value={values.title}
                 onChangeText={handleChange("title")}
                 onBlur={handleBlur("title")}
+                placeholder="Enter title (max 50 characters)"
+                editable={!loading}
               />
+              <Text style={styles.charCount}>
+                {`${values.title.length}/50`}
+              </Text>
             </View>
+            {touched.title && errors.title && (
+              <Text style={styles.error}>{errors.title}</Text>
+            )}
 
             {/* DESCRIPTION */}
             <View style={styles.descriptionContainer}>
@@ -236,48 +136,46 @@ const handleSubmit = (
                 value={values.description}
                 onChangeText={handleChange("description")}
                 onBlur={handleBlur("description")}
+                placeholder="Enter description (max 200 characters)"
+                editable={!loading}
               />
-              <Text style={styles.charCount}>{`${values.description.length}/200`}</Text>
+              <Text style={styles.charCount}>
+                {`${values.description.length}/200`}
+              </Text>
             </View>
             {touched.description && errors.description && (
               <Text style={styles.error}>{errors.description}</Text>
             )}
 
-            {/* TAGS */}
-            <TagSelector
-              selectedTags={values.tags}
-              setSelectedTags={(tags) => setFieldValue("tags", tags)}
-            />
-            {touched.tags && errors.tags && (
-              <Text style={styles.error}>{errors.tags}</Text>
-            )}
-
-<<<<<<<< HEAD:app/askForm.tsx
             {/* SUBMIT BUTTON */}
             <TouchableOpacity
-              style={styles.submitButton}
+              style={[styles.submitButton, loading && styles.disabledButton]}
               onPress={handleSubmit as any}
+              disabled={loading}
             >
-========
-            {/* SUBMIT */}
-            <TouchableOpacity style={styles.submitButton} onPress={() => handleSubmit()}>
->>>>>>>> main:app/screens/ask.tsx
-              <Text style={styles.submitText}>Submit</Text>
+              {loading ? (
+                <ActivityIndicator color={styles.submitText.color} />
+              ) : (
+                <Text style={styles.submitText}>Submit</Text>
+              )}
             </TouchableOpacity>
 
             {/* CANCEL BUTTON */}
             <TouchableOpacity
               style={styles.cancelButton}
               onPress={handleCancel}
+              disabled={loading}
             >
-              <Text style={styles.cancelText}>Cancel</Text>
+              <Text style={[styles.cancelText, loading && styles.disabledText]}>
+                Cancel
+              </Text>
             </TouchableOpacity>
           </View>
         )}
       </Formik>
     </ScrollView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -311,6 +209,7 @@ const styles = StyleSheet.create({
   },
   titleContainer: {
     marginBottom: 20,
+    position: "relative",
   },
   textArea: {
     marginTop: 10,
@@ -323,18 +222,25 @@ const styles = StyleSheet.create({
   },
   descriptionContainer: {
     marginBottom: 20,
+    position: "relative",
   },
   charCount: {
     position: "absolute",
     right: 10,
     bottom: 5,
     color: "#999",
+    fontSize: 12,
   },
   submitButton: {
     backgroundColor: "#0066CC",
     padding: 15,
     borderRadius: 5,
     alignItems: "center",
+    minHeight: 50,
+    justifyContent: "center",
+  },
+  disabledButton: {
+    backgroundColor: "#cccccc",
   },
   submitText: {
     color: "#fff",
@@ -343,9 +249,13 @@ const styles = StyleSheet.create({
   cancelButton: {
     marginTop: 10,
     alignItems: "center",
+    padding: 10,
   },
   cancelText: {
     color: "#888",
+  },
+  disabledText: {
+    color: "#cccccc",
   },
   error: {
     color: "red",
@@ -353,40 +263,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginLeft: 80,
   },
-  tagContainer: {
-    marginBottom: 20,
-  },
-  tagLabel: {
-    fontSize: 12,
-    color: "#666",
-    marginBottom: 10,
-    fontWeight: "bold",
-  },
-  tagRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    alignItems: "center",
-  },
-  tagButton: {
-    backgroundColor: "#FFF",
-    borderWidth: 1,
-    borderColor: "#000",
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    margin: 4,
-  },
-  tagText: {
-    fontSize: 12,
-    color: "#000",
-  },
-  tagPickerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  tagPicker: {
-    height: Platform.OS === "android" ? 40 : undefined,
-    width: 150,
-  },
 });
+
+export default FormScreen;
