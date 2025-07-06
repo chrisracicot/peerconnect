@@ -46,7 +46,7 @@ export default function AskScreen() {
 
       <TouchableOpacity
         style={styles.createButton}
-        onPress={() => router.push("../_askForm")}
+        onPress={() => router.push("/ask/form")}
       >
         <Text style={styles.createText}>Create New Request</Text>
       </TouchableOpacity>
