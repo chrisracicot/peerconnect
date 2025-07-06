@@ -6,7 +6,7 @@ import React, {
   useEffect,
   ReactNode,
 } from "react";
-import { supabase } from "lib/supabase"; 
+import { supabase } from "lib/supabase";
 import { Alert } from "react-native";
 
 // Define the shape of a form submission request
@@ -65,19 +65,46 @@ export const FormDataProvider: React.FC<FormDataProviderProps> = ({
   const activeRequests = requests.filter((req) => !isExpired(req.create_date));
   const expiredRequests = requests.filter((req) => isExpired(req.create_date));
 
-  // Fetch requests from Supabase
+  // Helper to get current logged-in user id as number
+  const getCurrentUserId = async (): Promise<number | null> => {
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    if (error || !user) {
+      console.error("Failed to get user", error);
+      return null;
+    }
+    const id = parseInt(user.id, 10);
+    if (isNaN(id)) {
+      console.error("User id is not a valid number");
+      return null;
+    }
+    return id;
+  };
+
+  // Fetch requests from Supabase filtered by logged-in user id
   const fetchRequests = async () => {
     try {
       setLoading(true);
-      // For now, we'll get all requests. In a real app, you'd filter by user_id
+      const userId = await getCurrentUserId();
+      if (!userId) {
+        setRequests([]);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("Request")
         .select("*")
+        .eq("user_id", userId)
         .order("create_date", { ascending: false });
 
       if (error) {
         console.error("Error fetching requests:", error);
         Alert.alert("Error", "Failed to fetch requests");
+        setRequests([]);
         return;
       }
 
@@ -90,7 +117,7 @@ export const FormDataProvider: React.FC<FormDataProviderProps> = ({
     }
   };
 
-  // Add a new request to Supabase
+  // Add a new request to Supabase with current user id
   const addRequest = async (
     data: Omit<
       RequestData,
@@ -99,15 +126,19 @@ export const FormDataProvider: React.FC<FormDataProviderProps> = ({
   ) => {
     try {
       setLoading(true);
+      const userId = await getCurrentUserId();
+      if (!userId) {
+        Alert.alert("Error", "User not logged in");
+        setLoading(false);
+        return;
+      }
 
-      // In a real app, you'd get the actual user_id from authentication
-      // For now, using a placeholder
       const requestData = {
         title: data.title,
         description: data.description,
         course_id: data.course, // Using course as course_id
-        user_id: 1, // Placeholder - replace with actual user ID
-        create_date: new Date().toISOString().split("T")[0], // Today's date in YYYY-MM-DD format
+        user_id: userId,
+        create_date: new Date().toISOString().split("T")[0], // Current date YYYY-MM-DD
       };
 
       const { data: newRequest, error } = await supabase
@@ -133,7 +164,7 @@ export const FormDataProvider: React.FC<FormDataProviderProps> = ({
     }
   };
 
-  // Delete a request from Supabase
+  // Delete a request from Supabase by request_id
   const deleteRequest = async (requestId: number) => {
     try {
       setLoading(true);
