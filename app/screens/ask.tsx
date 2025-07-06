@@ -13,8 +13,6 @@ import {
 import { useRouter } from "expo-router";
 import { useFormData, RequestData } from "../context/FormContext"; // Import RequestData type
 
-// Removed RequestItem interface - using RequestData from FormContext instead
-
 const ListScreen = () => {
   const router = useRouter();
   const {
@@ -31,10 +29,7 @@ const ListScreen = () => {
       "Delete Request",
       `Are you sure you want to delete "${title}"?`,
       [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
+        { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
           style: "destructive",
@@ -44,33 +39,28 @@ const ListScreen = () => {
     );
   };
 
-  // Format description to show only 2 lines
+  // Format description preview
   const formatDescription = (description: string, maxLength: number = 100) => {
-    if (description.length <= maxLength) {
-      return description;
-    }
+    if (description.length <= maxLength) return description;
     return description.substring(0, maxLength) + "...";
   };
 
-  // Render a request card - now using RequestData type
+  // Render request card
   const renderRequestCard = (item: RequestData) => {
-    // Handle case where request_id might be undefined
-    if (!item.request_id) {
-      return null;
-    }
+    if (!item.request_id) return null;
 
     return (
       <TouchableOpacity
         key={item.request_id}
         style={styles.card}
-        onPress={() => handleDelete(item.request_id!, item.title)} // Using non-null assertion since we checked above
+        onLongPress={() => handleDelete(item.request_id!, item.title)} // Long press to delete
         activeOpacity={0.7}
       >
-        <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
+        <Text style={styles.title} numberOfLines={1}>
           {item.title}
         </Text>
         <Text style={styles.course}>{item.course_id}</Text>
-        <Text style={styles.description} numberOfLines={2} ellipsizeMode="tail">
+        <Text style={styles.description} numberOfLines={2}>
           {formatDescription(item.description)}
         </Text>
         <Text style={styles.date}>
@@ -176,10 +166,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: "#0066CC",
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.22,
     shadowRadius: 2.22,
     elevation: 3,

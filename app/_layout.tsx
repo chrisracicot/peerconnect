@@ -49,10 +49,10 @@ function RootLayoutNav() {
     <FormDataProvider>
         <Stack>
           <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="field" options={{ headerShown: false }} />
-          <Stack.Screen name="courses" options={{ headerShown: false }} />
+          {/* <Stack.Screen name="field" options={{ headerShown: false }} />
+          <Stack.Screen name="courses" options={{ headerShown: false }} /> */}
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+          {/* <Stack.Screen name="modal" options={{ presentation: "modal" }} /> */}
           <Stack.Screen name="askForm" options={{ title: "Create Request" }} />
           <Stack.Screen
             name="context/FormContext"
