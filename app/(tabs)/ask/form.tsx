@@ -1,5 +1,6 @@
-// askForm.tsx
-import React, { useState } from "react";
+// app/(tabs)/_askForm.tsx
+
+import React from "react";
 import {
   View,
   Text,
@@ -7,36 +8,18 @@ import {
   TextInput,
   ScrollView,
   TouchableOpacity,
-  Platform,
+  
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
-<<<<<<<< HEAD:app/askForm.tsx
-import { useFormData } from "./context/FormContext";
-========
-import { useFormData } from '@context/FormContext';
->>>>>>>> main:app/screens/ask.tsx
+import { useFormData } from "@context/FormContext";
 import { Formik, FormikHelpers } from "formik";
 import * as Yup from "yup";
 
-const courses = ["Select", "CPRG 213", "CPNT 217", "COMM 238"];
-const weeks = ["Select", "Week 1", "Week 2", "Week 3"];
-const tags = ["Select", "Programming", "Networking", "Design"];
+import { courses, weeks, tags as tagOptions } from "@constants/formOptions";
+import { FormValues } from "@constants/types";
+import TagSelector from "@components/TagSelector";
 
-<<<<<<<< HEAD:app/askForm.tsx
-// Define the form values interface
-interface FormValues {
-  course: string;
-  week: string;
-  title: string;
-========
-interface FormValues {
-  course: string;
-  week: string;
->>>>>>>> main:app/screens/ask.tsx
-  description: string;
-  tags: string[];
-}
 
 const validationSchema = Yup.object().shape({
   course: Yup.string().test("course-check", "Please select a course", (value) => value !== "Select"),
@@ -49,13 +32,9 @@ const validationSchema = Yup.object().shape({
     .min(1, "Please select a tag"),
 });
 
-export default function AskScreen() {
+export default function AskFormScreen() {
   const router = useRouter();
-<<<<<<<< HEAD:app/askForm.tsx
   const { addRequest } = useFormData();
-========
-  const { addRequest } = useFormData(); // use addRequest as per best-practice FormContext
->>>>>>>> main:app/screens/ask.tsx
 
   const initialValues: FormValues = {
     course: "Select",
@@ -65,7 +44,6 @@ export default function AskScreen() {
     tags: [],
   };
 
-<<<<<<<< HEAD:app/askForm.tsx
   const handleSubmit = (
     values: FormValues,
     { resetForm }: FormikHelpers<FormValues>
@@ -76,113 +54,16 @@ export default function AskScreen() {
     };
     addRequest(newRequest);
     resetForm();
-    router.push( "./ask"); 
+    router.push("/(tabs)/ask");
   };
 
   const handleCancel = () => {
-    router.push("./ask"); 
+    router.push("/(tabs)/ask");
   };
-
-  // Tag selector component with proper typing
-  interface TagSelectorProps {
-    selectedTags: string[];
-    setSelectedTags: (tags: string[]) => void;
-  }
-
-  const TagSelector: React.FC<TagSelectorProps> = ({
-    selectedTags,
-    setSelectedTags,
-  }) => {
-    const [isPickerVisible, setPickerVisible] = useState(false);
-    const [pickerValue, setPickerValue] = useState(tags[0]);
-
-    const handleAddTag = () => {
-      if (pickerValue !== "Select" && !selectedTags.includes(pickerValue)) {
-        setSelectedTags([...selectedTags, pickerValue]);
-      }
-      setPickerVisible(false);
-    };
-
-    const handleRemoveTag = (tagToRemove: string) => {
-      setSelectedTags(selectedTags.filter((tag) => tag !== tagToRemove));
-    };
-
-    return (
-      <View style={styles.tagContainer}>
-        <Text style={styles.tagLabel}>TAGS</Text>
-        <View style={styles.tagRow}>
-          {selectedTags.map((tag) => (
-            <TouchableOpacity
-              key={tag}
-              onPress={() => handleRemoveTag(tag)}
-              style={styles.tagButton}
-            >
-              <Text style={styles.tagText}>{tag} ×</Text>
-            </TouchableOpacity>
-          ))}
-          {!isPickerVisible ? (
-            <TouchableOpacity
-              onPress={() => setPickerVisible(true)}
-              style={styles.tagButton}
-            >
-              <Text style={styles.tagText}>Add a tag +</Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.tagPickerContainer}>
-              <Picker
-                selectedValue={pickerValue}
-                style={styles.tagPicker}
-                onValueChange={(itemValue) =>
-                  setPickerValue(itemValue as string)
-                }
-              >
-                {tags
-                  .filter((tag) => !selectedTags.includes(tag))
-                  .map((tag) => (
-                    <Picker.Item key={tag} label={tag} value={tag} />
-                  ))}
-              </Picker>
-              <TouchableOpacity onPress={handleAddTag} style={styles.tagButton}>
-                <Text style={styles.tagText}>Add</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </View>
-    );
-========
-const handleSubmit = (
-  values: FormValues,
-  { resetForm }: FormikHelpers<FormValues>
-) => {
-  const requestData = {
-    ...values,
-    id: Date.now(), // ✅ now a number
-    title: `${values.course} - ${values.week}`,
->>>>>>>> main:app/screens/ask.tsx
-  };
-  addRequest(requestData);
-  resetForm();
-  router.push("/(tabs)/browse");
-};
-
 
   return (
     <ScrollView style={styles.container}>
-<<<<<<<< HEAD:app/askForm.tsx
       <Formik
-========
-      {/* Profile Header */}
-      <View style={styles.profileContainer}>
-        <Image
-          source={require("../../assets/images/icon.png")}
-          style={styles.avatar}
-        />
-        <Text style={styles.username}>User</Text>
-      </View>
-
-      <Formik<FormValues>
->>>>>>>> main:app/screens/ask.tsx
         initialValues={initialValues}
         validationSchema={validationSchema}
         onSubmit={handleSubmit}
@@ -205,7 +86,7 @@ const handleSubmit = (
                 onValueChange={(value) => setFieldValue("course", value)}
                 style={styles.input}
               >
-                {courses.map((course) => (
+                {courses.map((course: string) => (
                   <Picker.Item key={course} label={course} value={course} />
                 ))}
               </Picker>
@@ -247,29 +128,19 @@ const handleSubmit = (
             <TagSelector
               selectedTags={values.tags}
               setSelectedTags={(tags) => setFieldValue("tags", tags)}
+              availableTags={tagOptions}
             />
             {touched.tags && errors.tags && (
               <Text style={styles.error}>{errors.tags}</Text>
             )}
 
-<<<<<<<< HEAD:app/askForm.tsx
-            {/* SUBMIT BUTTON */}
-            <TouchableOpacity
-              style={styles.submitButton}
-              onPress={handleSubmit as any}
-            >
-========
             {/* SUBMIT */}
             <TouchableOpacity style={styles.submitButton} onPress={() => handleSubmit()}>
->>>>>>>> main:app/screens/ask.tsx
               <Text style={styles.submitText}>Submit</Text>
             </TouchableOpacity>
 
-            {/* CANCEL BUTTON */}
-            <TouchableOpacity
-              style={styles.cancelButton}
-              onPress={handleCancel}
-            >
+            {/* CANCEL */}
+            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
@@ -352,41 +223,5 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     fontSize: 12,
     marginLeft: 80,
-  },
-  tagContainer: {
-    marginBottom: 20,
-  },
-  tagLabel: {
-    fontSize: 12,
-    color: "#666",
-    marginBottom: 10,
-    fontWeight: "bold",
-  },
-  tagRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    alignItems: "center",
-  },
-  tagButton: {
-    backgroundColor: "#FFF",
-    borderWidth: 1,
-    borderColor: "#000",
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    margin: 4,
-  },
-  tagText: {
-    fontSize: 12,
-    color: "#000",
-  },
-  tagPickerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  tagPicker: {
-    height: Platform.OS === "android" ? 40 : undefined,
-    width: 150,
   },
 });

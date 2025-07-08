@@ -1,5 +1,4 @@
-<<<<<<< HEAD
-// ask.tsx
+// app/screens/ask.tsx
 import React from "react";
 import {
   View,
@@ -9,9 +8,9 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { useFormData } from "../context/FormContext";
+import { useFormData } from "@context/FormContext";
 
-// Define the interface for request items
+// Reusable interface (could be moved to constants later)
 interface RequestItem {
   id: number;
   title: string;
@@ -21,7 +20,7 @@ interface RequestItem {
   week?: string;
 }
 
-const ListScreen = () => {
+export default function AskScreen() {
   const router = useRouter();
   const { requests } = useFormData();
 
@@ -47,13 +46,13 @@ const ListScreen = () => {
 
       <TouchableOpacity
         style={styles.createButton}
-        onPress={() => router.push("./askForm")}
+        onPress={() => router.push("/ask/form")}
       >
         <Text style={styles.createText}>Create New Request</Text>
       </TouchableOpacity>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -104,8 +103,3 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
-
-export default ListScreen;
-=======
-export { default } from '@screens/ask';
->>>>>>> main
