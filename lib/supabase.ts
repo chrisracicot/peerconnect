@@ -16,3 +16,29 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
   },
 });
+
+export type Message = {
+  id: string;
+  created_at: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string;
+  read: boolean;
+};
+
+export type Conversation = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  user1_id: string;
+  user2_id: string;
+};
+
+export type ConversationWithMessages = Conversation & {
+  messages: Message[];
+  other_user: {
+    id: string;
+    username: string;
+    avatar_url: string;
+  };
+};
