@@ -1,5 +1,4 @@
-// app/(tabs)/ask/form.tsx
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,33 +7,26 @@ import {
   ScrollView,
   TouchableOpacity,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
+import DropDownPicker from "react-native-dropdown-picker";
 import { useRouter } from "expo-router";
 import { useFormData } from "@context/FormContext";
 import { Formik, FormikHelpers } from "formik";
 import * as Yup from "yup";
 
-import { courses, weeks, tags as tagOptions } from "@constants/formOptions";
+import { courses, tags as tagOptions } from "@constants/formOptions";
 import { FormValues } from "@constants/types";
-import TagSelector from "@components/TagSelector";
+//import TagSelector from "@components/TagSelector";
+import RequestTagSelector from "@components/ui/RequestTagSelector";
+import { getCurrentUserId } from "@lib/supabase/userService";
+import { createRequest } from "@lib/supabase/requestsService";
+import type { NewRequest } from "@models/request";
 
 const validationSchema = Yup.object().shape({
-  course: Yup.string().test(
-    "course-check",
-    "Please select a course",
-    (value) => value !== "Select"
-  ),
-  week: Yup.string().test(
-    "week-check",
-    "Please select a week",
-    (value) => value !== "Select"
-  ),
+  course: Yup.string().required("Please select a course"),
   description: Yup.string()
     .required("Description is required")
     .max(200, "Description must be 200 characters or less"),
-  tags: Yup.array()
-    .of(Yup.string().notOneOf(["Select"], "Please select a valid tag"))
-    .min(1, "Please select a tag"),
+  tags: Yup.array().of(Yup.string()).min(1, "Please select at least one tag"),
 });
 
 export default function AskFormScreen() {
@@ -42,22 +34,38 @@ export default function AskFormScreen() {
   const { addRequest } = useFormData();
 
   const initialValues: FormValues = {
-    course: "Select",
+    course: "",
     week: "Select",
     title: "",
     description: "",
     tags: [],
   };
 
-  const handleSubmit = (
+  // Dropdown state for react-native-dropdown-picker
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState(
+    courses.map((course) => ({ label: course, value: course }))
+  );
+
+  const handleSubmit = async (
     values: FormValues,
     { resetForm }: FormikHelpers<FormValues>
   ) => {
-    const newRequest = {
-      id: Date.now(),
-      ...values,
+    const user_id = await getCurrentUserId();
+    if (!user_id) return;
+
+    const newRequest: NewRequest = {
+      user_id,
+      course_id: values.course,
+      title: values.title,
+      description: values.description,
+      tags: values.tags,
+      status: "pending",
+      create_date: new Date().toISOString(),
     };
-    addRequest(newRequest);
+
+    await createRequest(newRequest);
+
     resetForm();
     router.push("/(tabs)/ask");
   };
@@ -67,7 +75,7 @@ export default function AskFormScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={{ flex: 1 }}>
       <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}
@@ -84,21 +92,27 @@ export default function AskFormScreen() {
         }) => (
           <View style={styles.formContainer}>
             {/* COURSE */}
-            <View style={styles.fieldRow}>
+            <View style={{ marginBottom: 20, zIndex: 1000 }}>
               <Text style={styles.label}>COURSE</Text>
-              <Picker
-                selectedValue={values.course}
-                onValueChange={(value) => setFieldValue("course", value)}
-                style={styles.input}
-              >
-                {courses.map((course: string) => (
-                  <Picker.Item key={course} label={course} value={course} />
-                ))}
-              </Picker>
+              <DropDownPicker
+                open={open}
+                value={values.course}
+                items={items}
+                setOpen={setOpen}
+                setValue={(callback) => {
+                  const selectedValue = callback(values.course);
+                  setFieldValue("course", selectedValue);
+                }}
+                setItems={setItems}
+                placeholder="Select a course"
+                style={{ borderColor: "#000" }}
+                containerStyle={{ marginTop: 10 }}
+                dropDownContainerStyle={{ borderColor: "#000" }}
+              />
+              {touched.course && errors.course && (
+                <Text style={styles.error}>{errors.course}</Text>
+              )}
             </View>
-            {touched.course && errors.course && (
-              <Text style={styles.error}>{errors.course}</Text>
-            )}
 
             {/* TITLE */}
             <View style={styles.titleContainer}>
@@ -123,16 +137,16 @@ export default function AskFormScreen() {
                 onChangeText={handleChange("description")}
                 onBlur={handleBlur("description")}
               />
-              <Text
-                style={styles.charCount}
-              >{`${values.description.length}/200`}</Text>
+              <Text style={styles.charCount}>
+                {`${values.description.length}/200`}
+              </Text>
             </View>
             {touched.description && errors.description && (
               <Text style={styles.error}>{errors.description}</Text>
             )}
 
             {/* TAGS */}
-            <TagSelector
+            <RequestTagSelector
               selectedTags={values.tags}
               setSelectedTags={(tags) => setFieldValue("tags", tags)}
               availableTags={tagOptions}
@@ -140,6 +154,15 @@ export default function AskFormScreen() {
             {touched.tags && errors.tags && (
               <Text style={styles.error}>{errors.tags}</Text>
             )}
+
+            {/* Selected tags as chips */}
+            <View style={styles.tagsPreview}>
+              {values.tags.map((tag) => (
+                <View key={tag} style={styles.tagChip}>
+                  <Text style={styles.tagChipText}>{tag}</Text>
+                </View>
+              ))}
+            </View>
 
             {/* SUBMIT */}
             <TouchableOpacity
@@ -159,7 +182,7 @@ export default function AskFormScreen() {
           </View>
         )}
       </Formik>
-    </ScrollView>
+    </View>
   );
 }
 
@@ -173,25 +196,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     padding: 20,
   },
-  fieldRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-  },
   label: {
     fontSize: 12,
     color: "#666",
-    marginRight: 10,
-    width: 80,
+    marginBottom: 6,
     fontWeight: "bold",
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#000000",
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
   },
   titleContainer: {
     marginBottom: 20,
@@ -214,6 +223,25 @@ const styles = StyleSheet.create({
     bottom: 5,
     color: "#999",
   },
+  tagsPreview: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 10,
+    marginBottom: 20,
+    width: "100%",
+  },
+  tagChip: {
+    backgroundColor: "#E0ECFF",
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginRight: 6,
+    marginTop: 6,
+  },
+  tagChipText: {
+    fontSize: 12,
+    color: "#003366",
+  },
   submitButton: {
     backgroundColor: "#0066CC",
     padding: 15,
@@ -235,6 +263,5 @@ const styles = StyleSheet.create({
     color: "red",
     marginBottom: 10,
     fontSize: 12,
-    marginLeft: 80,
   },
 });

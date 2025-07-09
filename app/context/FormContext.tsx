@@ -1,5 +1,12 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useEffect,
+} from "react";
 import type { RequestItem } from "@models/request";
+import { fetchRequests, createRequest } from "@lib/supabase/requestsService";
 
 // Define the context value type
 interface FormContextType {
@@ -18,49 +25,11 @@ interface FormDataProviderProps {
 export const FormDataProvider: React.FC<FormDataProviderProps> = ({
   children,
 }) => {
-  //dummy data
-  const [requests, setRequests] = useState<RequestItem[]>([
-    {
-      id: 1,
-      title: "Web Development",
-      description: "Need help with assignment 1 on responsive layouts.",
-      course: "CPRG 306",
-      tags: ["HTML", "CSS", "Flexbox"],
-      status: "booked",
-    },
-    {
-      id: 2,
-      title: "OOP Basics",
-      description: "Confused about constructors and inheritance.",
-      course: "CPRG 211",
-      tags: ["Java", "Classes", "Inheritance"],
-      status: "pending",
-    },
-    {
-      id: 3,
-      title: "Database Joins",
-      description: "Practice problems on LEFT and INNER JOIN.",
-      course: "CPRG 250",
-      tags: ["SQL", "Joins"],
-      status: "booked",
-    },
-    {
-      id: 4,
-      title: "UX Wireframes",
-      description: "Review my Figma wireframes for a project.",
-      course: "CPSY 202",
-      tags: ["Figma", "UX", "Design"],
-      status: "pending",
-    },
-    {
-      id: 5,
-      title: "Technical Writing",
-      description: "Proofread my document for COMM 238.",
-      course: "COMM 238",
-      tags: ["Writing", "Reports"],
-      status: "completed",
-    },
-  ]);
+  const [requests, setRequests] = useState<RequestItem[]>([]);
+
+  useEffect(() => {
+    fetchRequests().then(setRequests).catch(console.error);
+  }, []);
 
   const addRequest = (data: RequestItem) => {
     setRequests((prev) => [...prev, data]);

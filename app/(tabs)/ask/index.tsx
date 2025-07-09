@@ -1,5 +1,5 @@
 // app/(tabs)/ask/index.tsx
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,21 +10,33 @@ import {
 import { useRouter } from "expo-router";
 import { useFormData } from "@context/FormContext";
 import RequestCard from "@components/ui/RequestCard";
+import { getCurrentUserId } from "@lib/supabase/userService";
 
 export default function AskScreen() {
   const router = useRouter();
   const { requests } = useFormData();
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadUserId = async () => {
+      const userId = await getCurrentUserId();
+      setCurrentUserId(userId);
+    };
+    loadUserId();
+  }, []);
 
   return (
     <View style={styles.container}>
       <ScrollView>
-        {requests.map((item) => (
-          <RequestCard
-            key={item.id}
-            item={item}
-            onTagPress={(tag) => console.log("Filter on:", tag)}
-          />
-        ))}
+        {requests
+          .filter((item) => item.user_id === currentUserId)
+          .map((item) => (
+            <RequestCard
+              key={item.request_id}
+              item={item}
+              onTagPress={(tag) => console.log("Filter on:", tag)}
+            />
+          ))}
       </ScrollView>
 
       <TouchableOpacity

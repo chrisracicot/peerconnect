@@ -43,7 +43,7 @@ export default function BrowseScreen() {
           request.description
             .toLowerCase()
             .includes(searchQuery.toLowerCase()) ||
-          request.course.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          request.course_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
           request.tags.some((tag) =>
             tag.toLowerCase().includes(searchQuery.toLowerCase())
           )
@@ -88,7 +88,7 @@ export default function BrowseScreen() {
       <ScrollView>
         {filteredRequests.map((item) => (
           <RequestCard
-            key={item.id}
+            key={item.request_id}
             item={item}
             onTagPress={(tag) => console.log("Filter on:", tag)}
           />

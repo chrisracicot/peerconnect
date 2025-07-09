@@ -16,7 +16,7 @@ export default function BookingsScreen() {
       <ScrollView>
         {bookedRequests.map((item) => (
           <RequestCard
-            key={item.id}
+            key={item.request_id}
             item={item}
             onTagPress={(tag) => console.log("Filter on:", tag)}
           />

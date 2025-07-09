@@ -13,8 +13,10 @@ export default function RequestCard({ item, onTagPress }: Props) {
   const router = useRouter();
 
   const handlePress = () => {
-    const actualPath = `/request/${item.id}`;
-    router.push(`/request/${String(item.id)}` as const);
+    router.push({
+      pathname: "../request/[id]",
+      params: { id: String(item.request_id) },
+    });
   };
 
   return (
