@@ -30,14 +30,28 @@ export default function TabLayout() {
               TabBarIcon({ iconSet: "FontAwesome6", name: "hand-sparkles", color }),
           }}
         />
-        <Tabs.Screen
-          name="messages"
-          options={{
-            title: "Messages",
-            tabBarIcon: ({ color }) =>
-              TabBarIcon({ iconSet: "Feather", name: "message-circle", color }),
-          }}
-        />
+          <Tabs.Screen
+              name="messages/index"
+              options={{
+                  title: 'Messages',
+                  tabBarIcon: ({ color }) =>
+                      TabBarIcon({ iconSet: 'Feather', name: 'message-circle', color })
+              }}
+          />
+          <Tabs.Screen
+              name="messages/[id]"
+              options={{
+                  href: null, // Hide from tab bar
+                  headerShown: false // Show header with back button
+              }}
+          />
+          <Tabs.Screen
+              name="messages/new"
+              options={{
+                  href: null,
+                  headerShown: false
+              }}
+          />
         <Tabs.Screen
           name="bookings"
           options={{
