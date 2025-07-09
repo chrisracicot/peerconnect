@@ -18,14 +18,22 @@ export async function fetchRequests(): Promise<RequestItem[]> {
   return data;
 }
 
-// add new
-export async function createRequest(newRequest: NewRequest): Promise<void> {
-  const { error } = await supabase.from("request").insert([newRequest]);
+// add new, return inserted row
+export async function createRequest(data: NewRequest): Promise<RequestItem> {
+  const { data: inserted, error } = await supabase
+    .from("request")
+    .insert([data])
+    .select()
+    .single();
+
+  console.log("INSERT result:", inserted, "error:", error);
 
   if (error) {
-    console.error("Error creating request:", error.message, error.details);
-    throw new Error("Failed to create request. Please try again.");
+    console.error("Insert error:", error);
+    throw new Error(error.message || JSON.stringify(error));
   }
+  if (!inserted) throw new Error("Insert returned null");
+  return inserted;
 }
 
 // get by id

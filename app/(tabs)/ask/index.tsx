@@ -7,15 +7,18 @@ import {
   ScrollView,
   TouchableOpacity,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { useFormData } from "@context/FormContext";
 import RequestCard from "@components/ui/RequestCard";
 import { getCurrentUserId } from "@lib/supabase/userService";
+import { fetchRequests } from "@lib/supabase/requestsService";
 
 export default function AskScreen() {
   const router = useRouter();
   const { requests } = useFormData();
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const { setRequests } = useFormData();
 
   useEffect(() => {
     const loadUserId = async () => {
@@ -25,11 +28,18 @@ export default function AskScreen() {
     loadUserId();
   }, []);
 
+  // list is auto-refresh on focus
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchRequests().then(setRequests).catch(console.error);
+    }, [])
+  );
+
   return (
     <View style={styles.container}>
       <ScrollView>
         {requests
-          .filter((item) => item.user_id === currentUserId)
+          .filter((item) => item && item.user_id === currentUserId)
           .map((item) => (
             <RequestCard
               key={item.request_id}

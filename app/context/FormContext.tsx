@@ -12,6 +12,7 @@ import { fetchRequests, createRequest } from "@lib/supabase/requestsService";
 interface FormContextType {
   requests: RequestItem[];
   addRequest: (data: RequestItem) => void;
+  setRequests: React.Dispatch<React.SetStateAction<RequestItem[]>>;
 }
 
 // Create the context with undefined as initial (for safety)
@@ -31,12 +32,13 @@ export const FormDataProvider: React.FC<FormDataProviderProps> = ({
     fetchRequests().then(setRequests).catch(console.error);
   }, []);
 
-  const addRequest = (data: RequestItem) => {
+  const addRequest = (data: RequestItem | undefined) => {
+    if (!data) return;
     setRequests((prev) => [...prev, data]);
   };
 
   return (
-    <FormContext.Provider value={{ requests, addRequest }}>
+    <FormContext.Provider value={{ requests, addRequest, setRequests }}>
       {children}
     </FormContext.Provider>
   );

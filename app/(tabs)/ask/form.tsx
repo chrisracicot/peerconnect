@@ -51,23 +51,32 @@ export default function AskFormScreen() {
     values: FormValues,
     { resetForm }: FormikHelpers<FormValues>
   ) => {
-    const user_id = await getCurrentUserId();
-    if (!user_id) return;
+    try {
+      const user_id = await getCurrentUserId();
+      if (!user_id) throw new Error("User ID not found");
 
-    const newRequest: NewRequest = {
-      user_id,
-      course_id: values.course,
-      title: values.title,
-      description: values.description,
-      tags: values.tags,
-      status: "pending",
-      create_date: new Date().toISOString(),
-    };
+      const newRequest: NewRequest = {
+        user_id,
+        course_id: values.course,
+        title: values.title,
+        description: values.description,
+        tags: values.tags,
+        status: "pending",
+        create_date: new Date().toISOString(),
+      };
 
-    await createRequest(newRequest);
+      const insertedRequest = await createRequest(newRequest);
+      addRequest(insertedRequest);
 
-    resetForm();
-    router.push("/(tabs)/ask");
+      resetForm();
+      router.push("/(tabs)/ask");
+    } catch (err: unknown) {
+      if (err && typeof err === "object" && "message" in err) {
+        console.error((err as { message: string }).message);
+      } else {
+        console.error("Unknown error", err);
+      }
+    }
   };
 
   const handleCancel = () => {

@@ -1,13 +1,17 @@
 import { supabase } from "@lib/supabase";
 
-export async function getCurrentUserId(): Promise<string | null> {
+export async function getCurrentUserId(): Promise<string> {
   const {
     data: { user },
     error,
   } = await supabase.auth.getUser();
+
   if (error) {
-    console.error("Error getting current user:", error);
-    return null;
+    console.error("getCurrentUserId auth error:", error);
+    throw error;
   }
-  return user?.id ?? null;
+  if (!user?.id) {
+    throw new Error("No authenticated user found.");
+  }
+  return user.id;
 }
