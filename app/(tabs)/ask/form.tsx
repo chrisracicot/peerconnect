@@ -1,5 +1,4 @@
-// app/(tabs)/_askForm.tsx
-
+// app/(tabs)/ask/form.tsx
 import React from "react";
 import {
   View,
@@ -8,7 +7,6 @@ import {
   TextInput,
   ScrollView,
   TouchableOpacity,
-  
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
@@ -20,10 +18,17 @@ import { courses, weeks, tags as tagOptions } from "@constants/formOptions";
 import { FormValues } from "@constants/types";
 import TagSelector from "@components/TagSelector";
 
-
 const validationSchema = Yup.object().shape({
-  course: Yup.string().test("course-check", "Please select a course", (value) => value !== "Select"),
-  week: Yup.string().test("week-check", "Please select a week", (value) => value !== "Select"),
+  course: Yup.string().test(
+    "course-check",
+    "Please select a course",
+    (value) => value !== "Select"
+  ),
+  week: Yup.string().test(
+    "week-check",
+    "Please select a week",
+    (value) => value !== "Select"
+  ),
   description: Yup.string()
     .required("Description is required")
     .max(200, "Description must be 200 characters or less"),
@@ -118,7 +123,9 @@ export default function AskFormScreen() {
                 onChangeText={handleChange("description")}
                 onBlur={handleBlur("description")}
               />
-              <Text style={styles.charCount}>{`${values.description.length}/200`}</Text>
+              <Text
+                style={styles.charCount}
+              >{`${values.description.length}/200`}</Text>
             </View>
             {touched.description && errors.description && (
               <Text style={styles.error}>{errors.description}</Text>
@@ -135,12 +142,18 @@ export default function AskFormScreen() {
             )}
 
             {/* SUBMIT */}
-            <TouchableOpacity style={styles.submitButton} onPress={() => handleSubmit()}>
+            <TouchableOpacity
+              style={styles.submitButton}
+              onPress={() => handleSubmit()}
+            >
               <Text style={styles.submitText}>Submit</Text>
             </TouchableOpacity>
 
             {/* CANCEL */}
-            <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={handleCancel}
+            >
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
@@ -153,7 +166,7 @@ export default function AskFormScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#fff",
     padding: 20,
   },
   formContainer: {

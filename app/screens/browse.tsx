@@ -4,14 +4,14 @@ import {
   Text,
   StyleSheet,
   TextInput,
-  FlatList,
+  ScrollView,
   TouchableOpacity,
   Image,
   SafeAreaView,
 } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useFormData } from "@context/FormContext";
-import RequestCard from "../../components/ui/RequestCard";
+import RequestCard from "@components/ui/RequestCard";
 
 function Icon(props: React.ComponentProps<typeof FontAwesome>) {
   return <FontAwesome size={25} style={{ marginBottom: -3 }} {...props} />;
@@ -25,32 +25,33 @@ export default function BrowseScreen() {
 
   const handleSearch = (text: string) => {
     setSearchQuery(text);
-    const filtered = requests.filter(
-      (request) =>
-        request.course.toLowerCase().includes(text.toLowerCase()) ||
-        request.tags.some((tag) => tag.includes(text))
-    );
-    setFilteredRequests(filtered);
-  };
-
-  const toggleFilter = (filter: string) => {
-    setActiveFilters((prev) =>
-      prev.includes(filter)
-        ? prev.filter((f) => f !== filter)
-        : [...prev, filter]
-    );
   };
 
   useEffect(() => {
-    if (activeFilters.length === 0) {
-      setFilteredRequests(requests);
-    } else {
-      const filtered = requests.filter((request) =>
+    let results = requests;
+
+    if (activeFilters.length > 0) {
+      results = results.filter((request) =>
         activeFilters.every((filter) => request.tags.includes(filter))
       );
-      setFilteredRequests(filtered);
     }
-  }, [activeFilters, requests]);
+
+    if (searchQuery.trim()) {
+      results = results.filter(
+        (request) =>
+          request.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          request.description
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          request.course.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          request.tags.some((tag) =>
+            tag.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+      );
+    }
+
+    setFilteredRequests(results);
+  }, [activeFilters, searchQuery, requests]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -83,36 +84,16 @@ export default function BrowseScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Filters */}
-      <View style={styles.filtersContainer}>
-        {activeFilters.map((filter) => (
-          <TouchableOpacity
-            key={filter}
-            style={styles.filterTag}
-            onPress={() => toggleFilter(filter)}
-          >
-            <Text style={styles.filterText}>{filter}</Text>
-            <Text style={styles.closeIcon}>×</Text>
-          </TouchableOpacity>
+      {/* Booking List */}
+      <ScrollView>
+        {filteredRequests.map((item) => (
+          <RequestCard
+            key={item.id}
+            item={item}
+            onTagPress={(tag) => console.log("Filter on:", tag)}
+          />
         ))}
-        <TouchableOpacity
-          style={styles.addFilterButton}
-          onPress={() => console.log("Add filter")}
-        >
-          <Text style={styles.addFilterText}>+ Add Filter</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Request List */}
-      <FlatList
-        data={filteredRequests}
-        renderItem={({ item }) => (
-          <RequestCard item={item} onTagPress={toggleFilter} />
-        )}
-        keyExtractor={(item) => item.id.toString()}
-        contentContainerStyle={{ paddingBottom: 80 }}
-        style={{ marginTop: 20 }}
-      />
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -147,6 +128,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginHorizontal: 20,
     marginTop: 20,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: "#000000",
     borderRadius: 30,
@@ -162,40 +144,5 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     padding: 10,
     marginBottom: 3,
-  },
-  filtersContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginHorizontal: 20,
-    marginTop: 20,
-    flexWrap: "wrap",
-  },
-  filterTag: {
-    backgroundColor: "#6e2076",
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginRight: 10,
-    marginBottom: 10,
-  },
-  filterText: {
-    color: "#fff",
-    fontSize: 14,
-  },
-  closeIcon: {
-    color: "#fff",
-    fontSize: 14,
-    marginLeft: 5,
-  },
-  addFilterButton: {
-    backgroundColor: "#6e2076",
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    marginLeft: 10,
-  },
-  addFilterText: {
-    color: "#fff",
-    fontSize: 14,
   },
 });
