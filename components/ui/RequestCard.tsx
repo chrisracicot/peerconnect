@@ -1,20 +1,8 @@
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useRouter } from "expo-router";
-
-type RequestItem = {
-  id: number;
-  title: string;
-  description: string;
-  course: string;
-  tags: string[];
-};
+import type { RequestItem } from "@models/request";
 
 interface Props {
   item: RequestItem;
@@ -25,8 +13,10 @@ export default function RequestCard({ item, onTagPress }: Props) {
   const router = useRouter();
 
   const handlePress = () => {
-    const actualPath = `/request/${item.id}`;
-    router.push(`/request/${String(item.id)}` as const);
+    router.push({
+      pathname: "../request/[id]",
+      params: { id: String(item.request_id) },
+    });
   };
 
   return (

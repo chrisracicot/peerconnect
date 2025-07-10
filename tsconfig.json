@@ -18,7 +18,9 @@
       ],
       "@constants/*": [
         "constants/*"
-      ]
+      ],
+      "@models/*": ["types/*"],
+      "@lib/*": ["lib/*"],
     }
   },
   "include": [

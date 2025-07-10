@@ -24,34 +24,11 @@ const validationSchema = Yup.object().shape({
     .required("Password is required")
     .min(8, "Must be at least 8 characters"),
   staySignedIn: Yup.boolean(),
-  agreeToPolicy: Yup.boolean().oneOf(
-    [true],
-    "You must agree to the privacy policy"
-  ),
 });
 
 const LoginScreen = () => {
   const router = useRouter();
   const [submitError, setSubmitError] = useState("");
-
-
-  // Uncomment this section if you want to auto-redirect if already signed in
- 
-  // // Auto-redirect if already signed in
-  // useEffect(() => {
-  //   const checkSession = async () => {
-  //     const { data } = await supabase.auth.getSession();
-  //     if (data?.session?.user) {
-  //       router.replace("/browse");
-  //     }
-  //   };
-
-  //   const timeout = setTimeout(checkSession, 300);
-  //   return () => clearTimeout(timeout);
-  // }, []);
-
-
-
 
   return (
     <KeyboardAvoidingView
@@ -72,7 +49,6 @@ const LoginScreen = () => {
             initialValues={{
               email: "",
               password: "",
-              agreeToPolicy: false,
               staySignedIn: false,
             }}
             validationSchema={validationSchema}
@@ -88,7 +64,9 @@ const LoginScreen = () => {
                 if (error.message.includes("Invalid login credentials")) {
                   setSubmitError("Invalid email or password.");
                 } else if (error.message.includes("Email not confirmed")) {
-                  setSubmitError("Please confirm your email before logging in.");
+                  setSubmitError(
+                    "Please confirm your email before logging in."
+                  );
                 } else {
                   setSubmitError("Login failed. Please try again.");
                 }
@@ -103,7 +81,7 @@ const LoginScreen = () => {
                 return;
               }
 
-              router.push("/browse");
+              router.push("./browse");
               setSubmitting(false);
             }}
           >
@@ -177,12 +155,9 @@ const LoginScreen = () => {
                 )}
 
                 <TouchableOpacity
-                  style={[
-                    styles.loginButton,
-                    !values.agreeToPolicy && styles.disabledButton,
-                  ]}
+                  style={styles.loginButton}
                   onPress={() => handleSubmit()}
-                  disabled={!values.agreeToPolicy || isSubmitting}
+                  disabled={isSubmitting}
                 >
                   {isSubmitting ? (
                     <ActivityIndicator color="#fff" />
@@ -191,33 +166,12 @@ const LoginScreen = () => {
                   )}
                 </TouchableOpacity>
 
-<TouchableOpacity
-  onPress={() => router.push("/screens/signup")}
-  style={{ marginTop: 5, marginBottom: 10 }}
->
-  <Text style={styles.link}>Go to Signup</Text>
-</TouchableOpacity>
-
-
-                <View style={styles.checker}>
-                  <Checkbox
-                    value={values.agreeToPolicy}
-                    onValueChange={() =>
-                      setFieldValue("agreeToPolicy", !values.agreeToPolicy)
-                    }
-                    style={styles.checkbox}
-                  />
-                  <Text style={styles.checkboxLabel}>
-                    You agree to our{" "}
-                    <Text
-                      style={{ color: "#007AFF" }}
-                      onPress={() => console.log("Privacy Policy")}
-                    >
-                      privacy policy
-                    </Text>
-                    .
-                  </Text>
-                </View>
+                <TouchableOpacity
+                  onPress={() => router.push("./screens/signup")}
+                  style={{ marginTop: 5, marginBottom: 10 }}
+                >
+                  <Text style={styles.link}>Go to Signup</Text>
+                </TouchableOpacity>
 
                 <View style={styles.checker}>
                   <Checkbox
@@ -289,9 +243,6 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontSize: 16,
     fontWeight: "bold",
-  },
-  disabledButton: {
-    backgroundColor: "#ccc",
   },
   checkbox: {
     marginRight: 10,
