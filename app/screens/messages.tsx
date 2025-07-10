@@ -1,145 +1,236 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  StyleSheet,
+  TextInput,
   TouchableOpacity,
-  Image,
-  ScrollView,
+  StyleSheet,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
   SafeAreaView,
 } from "react-native";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { useFormData } from "@context/FormContext";
-import { useLocalSearchParams } from "expo-router";
+import { useRouter } from "expo-router";
+import { supabase } from "lib/supabase";
 
-function Icon(props: React.ComponentProps<typeof FontAwesome>) {
-  return <FontAwesome size={20} style={{ marginBottom: -3 }} {...props} />;
+interface Message {
+  id: number;
+  sender_id: string;
+  content: string;
+  created_at: string;
+  is_read: boolean;
 }
 
-const SettingsScreen = () => {
-  const settingsItems: Array<{
-    id: number;
-    icon: React.ComponentProps<typeof FontAwesome>["name"];
-    title: string;
-    route: string;
-  }> = [
-    {
-      id: 2,
-      icon: "bell",
-      title: "Notifications",
-      route: "/settings/notifications",
-    },
-    {
-      id: 3,
-      icon: "lock",
-      title: "Privacy & Security",
-      route: "/settings/privacy",
-    },
-    {
-      id: 4,
-      icon: "question-circle",
-      title: "Help & Support",
-      route: "/settings/help",
-    },
-    {
-      id: 5,
-      icon: "info-circle",
-      title: "About",
-      route: "/settings/about",
-    },
-  ];
+export const unstable_settings = {
+
+  headerShown: true,
+  headerBackTitle: "Back",
+};
+
+export default function MessagingScreen({ route }: { route: any }) {
+  const router = useRouter();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [receiverId, setReceiverId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Get current user ID on component mount
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+      } else {
+        router.push("/");
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  // Set receiver ID from route params if available
+  useEffect(() => {
+    if (route?.params?.receiverId) {
+      setReceiverId(route.params.receiverId);
+    }
+  }, [route]);
+
+  // Fetch messages when receiverId or currentUserId changes
+  useEffect(() => {
+    if (!currentUserId || !receiverId) return;
+
+    const fetchMessages = async () => {
+      const { data, error } = await supabase
+          .from("messages")
+          .select("*")
+          .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${currentUserId})`)
+          .order("created_at", { ascending: true });
+
+      if (error) {
+        console.error("Error fetching messages:", error);
+        return;
+      }
+
+      setMessages(data || []);
+    };
+
+    fetchMessages();
+
+    // Set up real-time subscription
+    const subscription = supabase
+        .channel("messages")
+        .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "messages",
+              filter: `or(and(sender_id.eq.${currentUserId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${currentUserId}))`,
+            },
+            (payload) => {
+              if (payload.eventType === "INSERT") {
+                setMessages((prev) => [...prev, payload.new as Message]);
+              }
+            }
+        )
+        .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, [currentUserId, receiverId]);
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !currentUserId || !receiverId) return;
+
+    const { error } = await supabase.from("messages").insert({
+      sender_id: currentUserId,
+      receiver_id: receiverId,
+      content: newMessage.trim(),
+    });
+
+    if (error) {
+      console.error("Error sending message:", error);
+      return;
+    }
+
+    setNewMessage("");
+  };
+
+  const renderMessage = ({ item }: { item: Message }) => {
+    const isCurrentUser = item.sender_id === currentUserId;
+    return (
+        <View
+            style={[
+              styles.messageContainer,
+              isCurrentUser ? styles.currentUserMessage : styles.otherUserMessage,
+            ]}
+        >
+          <Text style={styles.messageText}>{item.content}</Text>
+          <Text style={styles.messageTime}>
+            {new Date(item.created_at).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </Text>
+        </View>
+    );
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.heading}>Settings</Text>
-      </View>
-
-      {/* Settings List */}
-      <ScrollView contentContainerStyle={styles.contentContainer}>
-        {settingsItems.map((item) => (
+      <SafeAreaView style={styles.container}>
+        <FlatList
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={(item) => item.id.toString()}
+            contentContainerStyle={styles.messagesList}
+            inverted={false}
+        />
+        <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.inputContainer}
+        >
+          <TextInput
+              style={styles.input}
+              value={newMessage}
+              onChangeText={setNewMessage}
+              placeholder="Type a message..."
+              multiline
+          />
           <TouchableOpacity
-            key={item.id}
-            style={styles.settingsItem}
-            onPress={() => console.log(`Navigating to ${item.route}`)}
+              style={styles.sendButton}
+              onPress={handleSendMessage}
+              disabled={!newMessage.trim()}
           >
-            <View style={styles.iconContainer}>
-              <Icon name={item.icon} color="#0066CC" />
-            </View>
-            <Text style={styles.itemTitle}>{item.title}</Text>
-            <View style={styles.arrowContainer}>
-              <Icon name="angle-right" color="#666" />
-            </View>
+            <Text style={styles.sendButtonText}>Send</Text>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>Version 1.0.0</Text>
-      </View>
-    </SafeAreaView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
   );
-};
+}
+
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F5F5F5",
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#DDD",
+  messagesList: {
+    padding: 10,
   },
-  heading: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginLeft: 10,
+  messageContainer: {
+    maxWidth: "80%",
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 10,
   },
-  contentContainer: {
-    padding: 20,
+  currentUserMessage: {
+    alignSelf: "flex-end",
+    backgroundColor: "#0066CC",
   },
-  settingsItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#EEE",
-    marginHorizontal: -20,
-    paddingLeft: 20,
+  otherUserMessage: {
+    alignSelf: "flex-start",
+    backgroundColor: "#E5E5EA",
   },
-  iconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "#EAEAEA",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 15,
-  },
-  itemTitle: {
-    flex: 1,
+  messageText: {
     fontSize: 16,
-    color: "#333",
+    color: "#000",
   },
-  arrowContainer: {
-    paddingRight: 20,
+  currentUserMessageText: {
+    color: "#FFF",
   },
-  footer: {
+  messageTime: {
+    fontSize: 10,
+    color: "#666",
+    marginTop: 4,
+    textAlign: "right",
+  },
+  inputContainer: {
+    flexDirection: "row",
+    padding: 10,
     borderTopWidth: 1,
     borderTopColor: "#DDD",
-    padding: 20,
-    alignItems: "center",
+    backgroundColor: "#FFF",
   },
-  footerText: {
-    color: "#999",
-    fontSize: 12,
+  input: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#DDD",
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    marginRight: 10,
+    maxHeight: 100,
+  },
+  sendButton: {
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#0066CC",
+    borderRadius: 20,
+    paddingHorizontal: 20,
+  },
+  sendButtonText: {
+    color: "#FFF",
+    fontWeight: "bold",
   },
 });
-
-export default SettingsScreen;

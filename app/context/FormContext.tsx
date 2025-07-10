@@ -1,18 +1,18 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
-
-// Define the shape of a form submission request
-export interface RequestData {
-  id: number;
-  title: string;
-  description: string;
-  course: string;
-  tags: string[];
-}
+import React, {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useEffect,
+} from "react";
+import type { RequestItem } from "@models/request";
+import { fetchRequests, createRequest } from "@lib/supabase/requestsService";
 
 // Define the context value type
 interface FormContextType {
-  requests: RequestData[];
-  addRequest: (data: RequestData) => void;
+  requests: RequestItem[];
+  addRequest: (data: RequestItem) => void;
+  setRequests: React.Dispatch<React.SetStateAction<RequestItem[]>>;
 }
 
 // Create the context with undefined as initial (for safety)
@@ -23,15 +23,22 @@ interface FormDataProviderProps {
   children: ReactNode;
 }
 
-export const FormDataProvider: React.FC<FormDataProviderProps> = ({ children }) => {
-  const [requests, setRequests] = useState<RequestData[]>([]);
+export const FormDataProvider: React.FC<FormDataProviderProps> = ({
+  children,
+}) => {
+  const [requests, setRequests] = useState<RequestItem[]>([]);
 
-  const addRequest = (data: RequestData) => {
+  useEffect(() => {
+    fetchRequests().then(setRequests).catch(console.error);
+  }, []);
+
+  const addRequest = (data: RequestItem | undefined) => {
+    if (!data) return;
     setRequests((prev) => [...prev, data]);
   };
 
   return (
-    <FormContext.Provider value={{ requests, addRequest }}>
+    <FormContext.Provider value={{ requests, addRequest, setRequests }}>
       {children}
     </FormContext.Provider>
   );

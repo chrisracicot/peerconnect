@@ -1,25 +1,17 @@
-// app/_layout.tsx
-import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
+import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 import "react-native-reanimated";
 
-// Removed useColorScheme and ThemeProvider
-// import { useColorScheme } from "@/components/useColorScheme";
+SplashScreen.preventAutoHideAsync();
 
-import { FormDataProvider } from "./context/FormContext";
-
-export {
-  ErrorBoundary,
-} from "expo-router";
+export { ErrorBoundary } from "expo-router";
 
 export const unstable_settings = {
   initialRouteName: "(tabs)",
 };
-
-SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -41,37 +33,9 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
-}
-
-function RootLayoutNav() {
   return (
-<<<<<<< HEAD
-    <FormDataProvider>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="field" options={{ headerShown: false }} />
-          <Stack.Screen name="courses" options={{ headerShown: false }} />
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-          <Stack.Screen name="askForm" options={{ title: "Create Request" }} />
-          <Stack.Screen
-            name="context/FormContext"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-      </ThemeProvider>
-    </FormDataProvider>
-=======
     <Stack>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="field" options={{ headerShown: false }} />
-      <Stack.Screen name="courses" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="modal" options={{ presentation: "modal" }} />
     </Stack>
->>>>>>> main
   );
 }
