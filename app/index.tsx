@@ -34,9 +34,8 @@ const LoginScreen = () => {
   const router = useRouter();
   const [submitError, setSubmitError] = useState("");
 
-
   // Uncomment this section if you want to auto-redirect if already signed in
- 
+
   // // Auto-redirect if already signed in
   // useEffect(() => {
   //   const checkSession = async () => {
@@ -49,9 +48,6 @@ const LoginScreen = () => {
   //   const timeout = setTimeout(checkSession, 300);
   //   return () => clearTimeout(timeout);
   // }, []);
-
-
-
 
   return (
     <KeyboardAvoidingView
@@ -88,7 +84,9 @@ const LoginScreen = () => {
                 if (error.message.includes("Invalid login credentials")) {
                   setSubmitError("Invalid email or password.");
                 } else if (error.message.includes("Email not confirmed")) {
-                  setSubmitError("Please confirm your email before logging in.");
+                  setSubmitError(
+                    "Please confirm your email before logging in."
+                  );
                 } else {
                   setSubmitError("Login failed. Please try again.");
                 }
@@ -103,7 +101,7 @@ const LoginScreen = () => {
                 return;
               }
 
-              router.push("/browse");
+              router.push("./browse");
               setSubmitting(false);
             }}
           >
@@ -191,13 +189,12 @@ const LoginScreen = () => {
                   )}
                 </TouchableOpacity>
 
-<TouchableOpacity
-  onPress={() => router.push("/screens/signup")}
-  style={{ marginTop: 5, marginBottom: 10 }}
->
-  <Text style={styles.link}>Go to Signup</Text>
-</TouchableOpacity>
-
+                <TouchableOpacity
+                  onPress={() => router.push("./screens/signup")}
+                  style={{ marginTop: 5, marginBottom: 10 }}
+                >
+                  <Text style={styles.link}>Go to Signup</Text>
+                </TouchableOpacity>
 
                 <View style={styles.checker}>
                   <Checkbox

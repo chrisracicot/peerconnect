@@ -1,109 +1,97 @@
-// app/(tabs)/_layout.tsx
+// app/%28tabs%29/_layout.tsx
 import React from "react";
-import { Tabs } from "expo-router";
-
-// Icon libraries
+<<<<<<< HEAD
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { Link, Tabs } from "expo-router";
+import { Image, Pressable } from "react-native";
+
+import Colors from "@/constants/Colors";
+import { useColorScheme } from "@/components/useColorScheme";
+import { useClientOnlyValue } from "@/components/useClientOnlyValue";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import Feather from "@expo/vector-icons/Feather";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+// import { FormDataProvider } from "../context/FormContext";
 
-// Custom tab icon component that supports multiple icon sets
-function TabBarIcon({
-  iconSet = "FontAwesome", // Default icon set
-  name,
-  color,
-}: {
-  iconSet?:
-    | "FontAwesome"
-    | "FontAwesome6"
-    | "Feather"
-    | "MaterialCommunityIcons";
-  name: string;
+// You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
+function TabBarIcon(props: {
+  name: React.ComponentProps<typeof FontAwesome>["name"];
   color: string;
 }) {
-  const size = 24;
-
-  // Select the correct icon component based on the icon set
-  const IconComponent = {
-    FontAwesome,
-    FontAwesome6,
-    Feather,
-    MaterialCommunityIcons,
-  }[iconSet];
-
-  // If the icon set is not found, render nothing
-  if (!IconComponent) return null;
-
-  return (
-    <IconComponent
-      name={name as any}
-      size={size}
-      color={color}
-      style={{ marginBottom: -3 }}
-    />
-  );
+  return <FontAwesome size={40} style={{ marginBottom: -3 }} {...props} />;
 }
+=======
+import { Tabs } from "expo-router";
+import { FormDataProvider } from "../context/FormContext";
+import TabBarIcon from "../../components/layout/TabBarIcon";
+>>>>>>> main
 
 export default function TabLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarInactiveBackgroundColor: "#F6F7F9",
-        tabBarActiveBackgroundColor: "#F6F7F9",
-        tabBarActiveTintColor: "#A6192E",
-      }}
-    >
-      <Tabs.Screen
-        name="browse"
-        options={{
-          title: "Browse",
-          tabBarIcon: ({ color }) =>
-            TabBarIcon({ iconSet: "FontAwesome6", name: "handshake", color }),
+   
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarInactiveBackgroundColor: "#F6F7F9",
+          tabBarActiveBackgroundColor: "#F6F7F9",
+          tabBarActiveTintColor: "#A6192E",
         }}
-      />
-      <Tabs.Screen
-        name="ask"
-        options={{
-          title: "Ask",
-          tabBarIcon: ({ color }) =>
-            TabBarIcon({
-              iconSet: "FontAwesome6",
-              name: "hand-sparkles",
-              color,
-            }),
-        }}
-      />
-      <Tabs.Screen
-        name="messages"
-        options={{
-          title: "Messages",
-          tabBarIcon: ({ color }) =>
-            TabBarIcon({ iconSet: "Feather", name: "message-circle", color }),
-        }}
-      />
-      <Tabs.Screen
-        name="bookings"
-        options={{
-          title: "Bookings",
-          tabBarIcon: ({ color }) =>
-            TabBarIcon({ iconSet: "Feather", name: "calendar", color }),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Profile",
-          tabBarIcon: ({ color }) =>
-            TabBarIcon({
-              iconSet: "MaterialCommunityIcons",
-              name: "account-circle-outline",
-              color,
-            }),
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="browse"
+          options={{
+            title: "Browse",
+            tabBarIcon: ({ color }) =>
+              TabBarIcon({ iconSet: "FontAwesome6", name: "handshake", color }),
+          }}
+        />
+        <Tabs.Screen
+          name="ask"
+          options={{
+            title: "Ask",
+            tabBarIcon: ({ color }) =>
+              TabBarIcon({ iconSet: "FontAwesome6", name: "hand-sparkles", color }),
+          }}
+        />
+          <Tabs.Screen
+              name="messages/index"
+              options={{
+                  title: 'Messages',
+                  tabBarIcon: ({ color }) =>
+                      TabBarIcon({ iconSet: 'Feather', name: 'message-circle', color })
+              }}
+          />
+          <Tabs.Screen
+              name="messages/[id]"
+              options={{
+                  href: null, // Hide from tab bar
+                  headerShown: false // Show header with back button
+              }}
+          />
+          <Tabs.Screen
+              name="messages/new"
+              options={{
+                  href: null,
+                  headerShown: false
+              }}
+          />
+        <Tabs.Screen
+          name="bookings"
+          options={{
+            title: "Bookings",
+            tabBarIcon: ({ color }) =>
+              TabBarIcon({ iconSet: "Feather", name: "calendar", color }),
+          }}
+        />
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: "Profile",
+            tabBarIcon: ({ color }) =>
+              TabBarIcon({ iconSet: "MaterialCommunityIcons", name: "account-circle-outline", color }),
+          }}
+        />
+      </Tabs>
+
   );
 }
-// Note: This file is the layout for the tab navigation in the app.

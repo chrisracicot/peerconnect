@@ -1,4 +1,3 @@
-// askForm.tsx
 import React, { useState } from "react";
 import {
   View,
@@ -7,72 +6,85 @@ import {
   TextInput,
   ScrollView,
   TouchableOpacity,
-  Platform,
-  ActivityIndicator,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker";
+import DropDownPicker from "react-native-dropdown-picker";
 import { useRouter } from "expo-router";
-import { useFormData } from "../../context/FormContext";
+import { useFormData } from "@context/FormContext";
 import { Formik, FormikHelpers } from "formik";
 import * as Yup from "yup";
 
-// Sample data for dropdowns - sorted alphabetically
-const courses = ["Select", "COMM 238", "CPNT 217", "CPRG 213"].sort((a, b) => {
-  if (a === "Select") return -1;
-  if (b === "Select") return 1;
-  return a.localeCompare(b);
-});
-
-// Define the form values interface
-interface FormValues {
-  course: string;
-  title: string;
-  description: string;
-}
+import { courses, tags as tagOptions } from "@constants/formOptions";
+import { FormValues } from "@constants/types";
+//import TagSelector from "@components/TagSelector";
+import RequestTagSelector from "@components/ui/RequestTagSelector";
+import { getCurrentUserId } from "@lib/supabase/userService";
+import { createRequest } from "@lib/supabase/requestsService";
+import type { NewRequest } from "@models/request";
 
 const validationSchema = Yup.object().shape({
-  course: Yup.string().test(
-    "course-check",
-    "Please select a course",
-    (value) => value !== "Select"
-  ),
-  title: Yup.string()
-    .required("Title is required")
-    .max(50, "Title must be 50 characters or less"),
+  course: Yup.string().required("Please select a course"),
   description: Yup.string()
     .required("Description is required")
     .max(200, "Description must be 200 characters or less"),
+  tags: Yup.array().of(Yup.string()).min(1, "Please select at least one tag"),
 });
 
-const FormScreen = () => {
+export default function AskFormScreen() {
   const router = useRouter();
-  const { addRequest, loading } = useFormData();
+  const { addRequest } = useFormData();
 
   const initialValues: FormValues = {
-    course: "Select",
+    course: "",
+    week: "Select",
     title: "",
     description: "",
+    tags: [],
   };
+
+  // Dropdown state for react-native-dropdown-picker
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState(
+    courses.map((course) => ({ label: course, value: course }))
+  );
 
   const handleSubmit = async (
     values: FormValues,
     { resetForm }: FormikHelpers<FormValues>
   ) => {
-    await addRequest({
-      title: values.title,
-      description: values.description,
-      course: values.course,
-    });
-    resetForm();
-    router.push("./ask");
+    try {
+      const user_id = await getCurrentUserId();
+      if (!user_id) throw new Error("User ID not found");
+
+      const newRequest: NewRequest = {
+        user_id,
+        course_id: values.course,
+        title: values.title,
+        description: values.description,
+        tags: values.tags,
+        status: "pending",
+        create_date: new Date().toISOString(),
+      };
+
+      const insertedRequest = await createRequest(newRequest);
+      addRequest(insertedRequest);
+
+      resetForm();
+      router.push("/(tabs)/ask");
+    } catch (err: unknown) {
+      if (err && typeof err === "object" && "message" in err) {
+        console.error((err as { message: string }).message);
+      } else {
+        console.error("Unknown error", err);
+      }
+    }
   };
 
   const handleCancel = () => {
-    router.push("./ask");
+    router.push("/(tabs)/ask");
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={{ flex: 1 }}>
       <Formik
         initialValues={initialValues}
         validationSchema={validationSchema}
@@ -89,22 +101,27 @@ const FormScreen = () => {
         }) => (
           <View style={styles.formContainer}>
             {/* COURSE */}
-            <View style={styles.fieldRow}>
+            <View style={{ marginBottom: 20, zIndex: 1000 }}>
               <Text style={styles.label}>COURSE</Text>
-              <Picker
-                selectedValue={values.course}
-                onValueChange={(value) => setFieldValue("course", value)}
-                style={styles.input}
-                enabled={!loading}
-              >
-                {courses.map((course) => (
-                  <Picker.Item key={course} label={course} value={course} />
-                ))}
-              </Picker>
+              <DropDownPicker
+                open={open}
+                value={values.course}
+                items={items}
+                setOpen={setOpen}
+                setValue={(callback) => {
+                  const selectedValue = callback(values.course);
+                  setFieldValue("course", selectedValue);
+                }}
+                setItems={setItems}
+                placeholder="Select a course"
+                style={{ borderColor: "#000" }}
+                containerStyle={{ marginTop: 10 }}
+                dropDownContainerStyle={{ borderColor: "#000" }}
+              />
+              {touched.course && errors.course && (
+                <Text style={styles.error}>{errors.course}</Text>
+              )}
             </View>
-            {touched.course && errors.course && (
-              <Text style={styles.error}>{errors.course}</Text>
-            )}
 
             {/* TITLE */}
             <View style={styles.titleContainer}>
@@ -115,16 +132,8 @@ const FormScreen = () => {
                 value={values.title}
                 onChangeText={handleChange("title")}
                 onBlur={handleBlur("title")}
-                placeholder="Enter title (max 50 characters)"
-                editable={!loading}
               />
-              <Text style={styles.charCount}>
-                {`${values.title.length}/50`}
-              </Text>
             </View>
-            {touched.title && errors.title && (
-              <Text style={styles.error}>{errors.title}</Text>
-            )}
 
             {/* DESCRIPTION */}
             <View style={styles.descriptionContainer}>
@@ -136,8 +145,6 @@ const FormScreen = () => {
                 value={values.description}
                 onChangeText={handleChange("description")}
                 onBlur={handleBlur("description")}
-                placeholder="Enter description (max 200 characters)"
-                editable={!loading}
               />
               <Text style={styles.charCount}>
                 {`${values.description.length}/200`}
@@ -147,69 +154,65 @@ const FormScreen = () => {
               <Text style={styles.error}>{errors.description}</Text>
             )}
 
-            {/* SUBMIT BUTTON */}
+            {/* TAGS */}
+            <RequestTagSelector
+              selectedTags={values.tags}
+              setSelectedTags={(tags) => setFieldValue("tags", tags)}
+              availableTags={tagOptions}
+            />
+            {touched.tags && errors.tags && (
+              <Text style={styles.error}>{errors.tags}</Text>
+            )}
+
+            {/* Selected tags as chips */}
+            <View style={styles.tagsPreview}>
+              {values.tags.map((tag) => (
+                <View key={tag} style={styles.tagChip}>
+                  <Text style={styles.tagChipText}>{tag}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* SUBMIT */}
             <TouchableOpacity
-              style={[styles.submitButton, loading && styles.disabledButton]}
-              onPress={handleSubmit as any}
-              disabled={loading}
+              style={styles.submitButton}
+              onPress={() => handleSubmit()}
             >
-              {loading ? (
-                <ActivityIndicator color={styles.submitText.color} />
-              ) : (
-                <Text style={styles.submitText}>Submit</Text>
-              )}
+              <Text style={styles.submitText}>Submit</Text>
             </TouchableOpacity>
 
-            {/* CANCEL BUTTON */}
+            {/* CANCEL */}
             <TouchableOpacity
               style={styles.cancelButton}
               onPress={handleCancel}
-              disabled={loading}
             >
-              <Text style={[styles.cancelText, loading && styles.disabledText]}>
-                Cancel
-              </Text>
+              <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         )}
       </Formik>
-    </ScrollView>
+    </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#fff",
     padding: 20,
   },
   formContainer: {
     marginBottom: 20,
     padding: 20,
   },
-  fieldRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-  },
   label: {
     fontSize: 12,
     color: "#666",
-    marginRight: 10,
-    width: 80,
+    marginBottom: 6,
     fontWeight: "bold",
-  },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#000000",
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
   },
   titleContainer: {
     marginBottom: 20,
-    position: "relative",
   },
   textArea: {
     marginTop: 10,
@@ -222,25 +225,37 @@ const styles = StyleSheet.create({
   },
   descriptionContainer: {
     marginBottom: 20,
-    position: "relative",
   },
   charCount: {
     position: "absolute",
     right: 10,
     bottom: 5,
     color: "#999",
+  },
+  tagsPreview: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 10,
+    marginBottom: 20,
+    width: "100%",
+  },
+  tagChip: {
+    backgroundColor: "#E0ECFF",
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginRight: 6,
+    marginTop: 6,
+  },
+  tagChipText: {
     fontSize: 12,
+    color: "#003366",
   },
   submitButton: {
     backgroundColor: "#0066CC",
     padding: 15,
     borderRadius: 5,
     alignItems: "center",
-    minHeight: 50,
-    justifyContent: "center",
-  },
-  disabledButton: {
-    backgroundColor: "#cccccc",
   },
   submitText: {
     color: "#fff",
@@ -249,20 +264,13 @@ const styles = StyleSheet.create({
   cancelButton: {
     marginTop: 10,
     alignItems: "center",
-    padding: 10,
   },
   cancelText: {
     color: "#888",
-  },
-  disabledText: {
-    color: "#cccccc",
   },
   error: {
     color: "red",
     marginBottom: 10,
     fontSize: 12,
-    marginLeft: 80,
   },
 });
-
-export default FormScreen;
