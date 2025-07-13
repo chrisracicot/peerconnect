@@ -56,6 +56,9 @@ export default function Signup() {
               const { data, error } = await supabase.auth.signUp({
                 email: values.email,
                 password: values.password,
+                options: {
+                  emailRedirectTo: `${process.env.EXPO_PUBLIC_WEB_URL}/auth/verify`,
+                },
               });
 
               if (error) {

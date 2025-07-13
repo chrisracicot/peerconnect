@@ -6,7 +6,7 @@ import React, {
   useEffect,
 } from "react";
 import type { RequestItem } from "@models/request";
-import { fetchRequests, createRequest } from "@lib/supabase/requestsService";
+import { fetchRequests, createRequest } from "@lib/services/requestsService";
 
 // Define the context value type
 interface FormContextType {
