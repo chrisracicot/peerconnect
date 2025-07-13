@@ -17,8 +17,8 @@ import { courses, tags as tagOptions } from "@constants/formOptions";
 import { FormValues } from "@constants/types";
 //import TagSelector from "@components/TagSelector";
 import RequestTagSelector from "@components/ui/RequestTagSelector";
-import { getCurrentUserId } from "@lib/supabase/userService";
-import { createRequest } from "@lib/supabase/requestsService";
+import { getCurrentUserId } from "@lib/services/userService";
+import { createRequest } from "@lib/services/requestsService";
 import type { NewRequest } from "@models/request";
 
 const validationSchema = Yup.object().shape({

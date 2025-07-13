@@ -11,8 +11,8 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { useFormData } from "@context/FormContext";
 import RequestCard from "@components/ui/RequestCard";
-import { getCurrentUserId } from "@lib/supabase/userService";
-import { fetchRequests } from "@lib/supabase/requestsService";
+import { getCurrentUserId } from "@lib/services/userService";
+import { fetchRequests } from "@lib/services/requestsService";
 
 export default function AskScreen() {
   const router = useRouter();

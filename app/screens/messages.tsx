@@ -11,7 +11,7 @@ import {
   SafeAreaView,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { supabase } from "lib/supabase";
+import { supabase } from "@lib/supabase";
 
 interface Message {
   id: number;
@@ -22,7 +22,6 @@ interface Message {
 }
 
 export const unstable_settings = {
-
   headerShown: true,
   headerBackTitle: "Back",
 };
@@ -37,7 +36,9 @@ export default function MessagingScreen({ route }: { route: any }) {
   // Get current user ID on component mount
   useEffect(() => {
     const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (user) {
         setCurrentUserId(user.id);
       } else {
@@ -61,10 +62,12 @@ export default function MessagingScreen({ route }: { route: any }) {
 
     const fetchMessages = async () => {
       const { data, error } = await supabase
-          .from("messages")
-          .select("*")
-          .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${currentUserId})`)
-          .order("created_at", { ascending: true });
+        .from("messages")
+        .select("*")
+        .or(
+          `and(sender_id.eq.${currentUserId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${currentUserId})`
+        )
+        .order("created_at", { ascending: true });
 
       if (error) {
         console.error("Error fetching messages:", error);
@@ -78,22 +81,22 @@ export default function MessagingScreen({ route }: { route: any }) {
 
     // Set up real-time subscription
     const subscription = supabase
-        .channel("messages")
-        .on(
-            "postgres_changes",
-            {
-              event: "*",
-              schema: "public",
-              table: "messages",
-              filter: `or(and(sender_id.eq.${currentUserId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${currentUserId}))`,
-            },
-            (payload) => {
-              if (payload.eventType === "INSERT") {
-                setMessages((prev) => [...prev, payload.new as Message]);
-              }
-            }
-        )
-        .subscribe();
+      .channel("messages")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "messages",
+          filter: `or(and(sender_id.eq.${currentUserId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${currentUserId}))`,
+        },
+        (payload) => {
+          if (payload.eventType === "INSERT") {
+            setMessages((prev) => [...prev, payload.new as Message]);
+          }
+        }
+      )
+      .subscribe();
 
     return () => {
       supabase.removeChannel(subscription);
@@ -120,55 +123,54 @@ export default function MessagingScreen({ route }: { route: any }) {
   const renderMessage = ({ item }: { item: Message }) => {
     const isCurrentUser = item.sender_id === currentUserId;
     return (
-        <View
-            style={[
-              styles.messageContainer,
-              isCurrentUser ? styles.currentUserMessage : styles.otherUserMessage,
-            ]}
-        >
-          <Text style={styles.messageText}>{item.content}</Text>
-          <Text style={styles.messageTime}>
-            {new Date(item.created_at).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </Text>
-        </View>
+      <View
+        style={[
+          styles.messageContainer,
+          isCurrentUser ? styles.currentUserMessage : styles.otherUserMessage,
+        ]}
+      >
+        <Text style={styles.messageText}>{item.content}</Text>
+        <Text style={styles.messageTime}>
+          {new Date(item.created_at).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </Text>
+      </View>
     );
   };
 
   return (
-      <SafeAreaView style={styles.container}>
-        <FlatList
-            data={messages}
-            renderItem={renderMessage}
-            keyExtractor={(item) => item.id.toString()}
-            contentContainerStyle={styles.messagesList}
-            inverted={false}
+    <SafeAreaView style={styles.container}>
+      <FlatList
+        data={messages}
+        renderItem={renderMessage}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={styles.messagesList}
+        inverted={false}
+      />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.inputContainer}
+      >
+        <TextInput
+          style={styles.input}
+          value={newMessage}
+          onChangeText={setNewMessage}
+          placeholder="Type a message..."
+          multiline
         />
-        <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={styles.inputContainer}
+        <TouchableOpacity
+          style={styles.sendButton}
+          onPress={handleSendMessage}
+          disabled={!newMessage.trim()}
         >
-          <TextInput
-              style={styles.input}
-              value={newMessage}
-              onChangeText={setNewMessage}
-              placeholder="Type a message..."
-              multiline
-          />
-          <TouchableOpacity
-              style={styles.sendButton}
-              onPress={handleSendMessage}
-              disabled={!newMessage.trim()}
-          >
-            <Text style={styles.sendButtonText}>Send</Text>
-          </TouchableOpacity>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
+          <Text style={styles.sendButtonText}>Send</Text>
+        </TouchableOpacity>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
