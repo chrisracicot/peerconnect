@@ -30,7 +30,6 @@ export async function createRequest(data: NewRequest): Promise<RequestItem> {
   console.log("INSERT result:", inserted, "error:", error);
 
   if (error) {
-    //console.error("Insert error:", error);
     throw new Error(error.message || JSON.stringify(error));
   }
   if (!inserted) throw new Error("Insert returned null");

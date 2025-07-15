@@ -16,9 +16,9 @@ import { Formik, FormikHelpers } from "formik";
 import * as Yup from "yup";
 import Header from "@components/ui/Header";
 import { FormValues } from "@constants/types";
-import { getCurrentUserId } from "@lib/supabase/userService";
-import { createRequest } from "@lib/supabase/requestsService";
-import { getCourses } from "@lib/supabase/courseService";
+import { getCurrentUserId } from "@lib/services/userService";
+import { createRequest } from "@lib/services/requestsService";
+import { getCourses } from "@lib/services/courseService";
 import type { NewRequest } from "@models/request";
 
 const validationSchema = Yup.object().shape({

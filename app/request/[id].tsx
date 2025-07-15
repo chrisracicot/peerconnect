@@ -23,7 +23,7 @@ import {
   updateRequest,
   deleteRequest,
   reactivateRequest,
-} from "@lib/supabase/requestsService";
+} from "@lib/services/requestsService";
 import { useFormData } from "@context/FormContext";
 import {
   isRequestExpired,
