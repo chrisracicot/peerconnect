@@ -1,7 +1,7 @@
 import React, { useLayoutEffect, useState, useEffect } from "react";
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
-import { getRequestById } from "@lib/supabase/requestsService";
+import { getRequestById } from "@lib/services/requestsService";
 import type { RequestItem } from "@models/request";
 
 export default function RequestDetailScreen() {
