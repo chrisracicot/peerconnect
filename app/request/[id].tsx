@@ -1,4 +1,9 @@
 // app/request/[id].tsx
+// RequestDetailScreen allows the user to view full request info and perform actions:
+// - Edit request title and description
+// - Delete the request
+// - Reactivate if expired
+
 import React, { useLayoutEffect, useState, useEffect } from "react";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import {
@@ -20,6 +25,11 @@ import {
   reactivateRequest,
 } from "@lib/supabase/requestsService";
 import { useFormData } from "@context/FormContext";
+import {
+  isRequestExpired,
+  formatDate,
+  getStatusColor,
+} from "@lib/utils/requestUtils";
 import type { RequestItem } from "@models/request";
 
 export default function RequestDetailScreen() {
@@ -53,7 +63,8 @@ export default function RequestDetailScreen() {
   const loadRequest = async () => {
     try {
       setLoading(true);
-      const data = await getRequestById(String(id));
+      const data = await getRequestById(Number(id));
+      //console.log("Loading request with id:", Number(id));
       setRequest(data);
       if (data) {
         setEditedTitle(data.title);
@@ -101,7 +112,7 @@ export default function RequestDetailScreen() {
       // Update the global state
       setRequests((prev) =>
         prev.map((req) =>
-          req.request_id === request.request_id ? updatedRequest : req
+          req.request_id === updatedRequest.request_id ? updatedRequest : req
         )
       );
 
@@ -190,30 +201,6 @@ export default function RequestDetailScreen() {
     }
   };
 
-  // Check if request is expired
-  const isExpired = (createDate: string): boolean => {
-    const created = new Date(createDate);
-    const now = new Date();
-    const daysDiff = Math.floor(
-      (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    return daysDiff > 15;
-  };
-
-  // Get status badge color
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "pending":
-        return "#ffc107";
-      case "booked":
-        return "#28a745";
-      case "completed":
-        return "#6c757d";
-      default:
-        return "#666";
-    }
-  };
-
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -242,7 +229,7 @@ export default function RequestDetailScreen() {
     );
   }
 
-  const expired = isExpired(request.create_date);
+  const expired = isRequestExpired(request.create_date);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -325,7 +312,7 @@ export default function RequestDetailScreen() {
             <View style={styles.detailRow}>
               <FontAwesome name="calendar" size={16} color="#666" />
               <Text style={styles.detail}>
-                Created: {new Date(request.create_date).toLocaleDateString()}
+                Created: {formatDate(request.create_date)}
               </Text>
             </View>
             {request.assigned_to && (

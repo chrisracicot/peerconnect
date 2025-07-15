@@ -1,4 +1,7 @@
 // components/ui/RequestCard.tsx
+// RequestCard is a presentational component for displaying request summaries.
+// Clicking the card navigates to the detail page. Logic is handled there.
+
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
@@ -8,22 +11,28 @@ import type { RequestItem } from "@models/request";
 interface Props {
   item: RequestItem;
   isExpired?: boolean;
-  showActions?: boolean; 
+  showDetailsButton?: boolean; // Control whether to show "tap to view details"
+  onPress?: () => void; // Custom press handler
 }
 
 export default function RequestCard({
   item,
   isExpired = false,
-  showActions = false,
+  showDetailsButton = true,
+  onPress,
 }: Props) {
   const router = useRouter();
 
-  // Navigate to request detail page where all actions are handled
+  // Default navigation to detail page
   const handlePress = () => {
-    router.push({
-      pathname: "/request/[id]" as const,
-      params: { id: String(item.request_id) },
-    });
+    if (onPress) {
+      onPress();
+    } else {
+      router.push({
+        pathname: "/request/[id]" as const,
+        params: { id: String(item.request_id) },
+      });
+    }
   };
 
   // Calculate days since creation
@@ -33,6 +42,34 @@ export default function RequestCard({
     return Math.floor(
       (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)
     );
+  };
+
+  // Get status badge component
+  const getStatusBadge = () => {
+    if (isExpired) {
+      return (
+        <View style={styles.expiredBadge}>
+          <Text style={styles.expiredBadgeText}>EXPIRED</Text>
+        </View>
+      );
+    }
+
+    switch (item.status) {
+      case "booked":
+        return (
+          <View style={styles.bookedBadge}>
+            <Text style={styles.bookedBadgeText}>BOOKED</Text>
+          </View>
+        );
+      case "completed":
+        return (
+          <View style={styles.completedBadge}>
+            <Text style={styles.completedBadgeText}>COMPLETED</Text>
+          </View>
+        );
+      default:
+        return null;
+    }
   };
 
   const daysSinceCreation = getDaysSinceCreation(item.create_date);
@@ -73,30 +110,16 @@ export default function RequestCard({
         </Text>
       </View>
 
-      {/* Visual indicators */}
-      {isExpired && (
-        <View style={styles.expiredBadge}>
-          <Text style={styles.expiredBadgeText}>EXPIRED</Text>
+      {/* Status badge */}
+      {getStatusBadge()}
+
+      {/* Show details button only when requested */}
+      {showDetailsButton && (
+        <View style={styles.tapIndicator}>
+          <Text style={styles.tapText}>Tap to view details</Text>
+          <FontAwesome name="chevron-right" size={12} color="#999" />
         </View>
       )}
-
-      {item.status === "booked" && (
-        <View style={styles.bookedBadge}>
-          <Text style={styles.bookedBadgeText}>BOOKED</Text>
-        </View>
-      )}
-
-      {item.status === "completed" && (
-        <View style={styles.completedBadge}>
-          <Text style={styles.completedBadgeText}>COMPLETED</Text>
-        </View>
-      )}
-
-      {/* Tap to view indicator */}
-      <View style={styles.tapIndicator}>
-        <Text style={styles.tapText}>Tap to view details</Text>
-        <FontAwesome name="chevron-right" size={12} color="#999" />
-      </View>
     </TouchableOpacity>
   );
 }
@@ -154,12 +177,6 @@ const styles = StyleSheet.create({
     color: "#888",
     fontWeight: "500",
     marginBottom: 2,
-  },
-  statusText: {
-    fontSize: 12,
-    color: "#0066CC",
-    fontWeight: "600",
-    textTransform: "capitalize",
   },
   dayText: {
     fontSize: 12,

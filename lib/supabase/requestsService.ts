@@ -38,7 +38,7 @@ export async function createRequest(data: NewRequest): Promise<RequestItem> {
 }
 
 // Get request by ID
-export async function getRequestById(id: string): Promise<RequestItem | null> {
+export async function getRequestById(id: number): Promise<RequestItem | null> {
   const { data, error } = await supabase
     .from("request")
     .select("*")
@@ -56,9 +56,7 @@ export async function getRequestById(id: string): Promise<RequestItem | null> {
 // Update request - allows partial updates
 export async function updateRequest(
   id: number,
-  updates: Partial<
-    Pick<RequestItem, "title" | "description" | "status">
-  >
+  updates: Partial<Pick<RequestItem, "title" | "description">>
 ): Promise<RequestItem> {
   const { data, error } = await supabase
     .from("request")

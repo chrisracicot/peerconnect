@@ -1,4 +1,7 @@
 // app/(tabs)/ask/index.tsx
+// AskScreen displays the current user's requests, split into active and expired.
+// Actions like edit/delete/reactivate are handled in the request detail screen.
+
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -15,6 +18,7 @@ import { useFormData } from "@context/FormContext";
 import RequestCard from "@components/ui/RequestCard";
 import { getCurrentUserId } from "@lib/supabase/userService";
 import { fetchRequests } from "@lib/supabase/requestsService";
+import { isRequestExpired } from "@lib/utils/requestUtils";
 import Header from "@components/ui/Header";
 
 export default function AskScreen() {
@@ -59,16 +63,6 @@ export default function AskScreen() {
     setRefreshing(false);
   };
 
-  // Helper function to check if request is expired (15 days)
-  const isRequestExpired = (createDate: string): boolean => {
-    const created = new Date(createDate);
-    const now = new Date();
-    const daysDiff = Math.floor(
-      (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    return daysDiff > 15;
-  };
-
   // Filter and separate user's requests into active and expired
   const userRequests = requests.filter(
     (item) => item && item.user_id === currentUserId
@@ -98,7 +92,7 @@ export default function AskScreen() {
                 key={item.request_id}
                 item={item}
                 isExpired={false}
-                showActions={false} // Only show card, navigation handled in RequestCard
+                showDetailsButton={true} // Show details button on main index
               />
             ))
           ) : (
@@ -120,7 +114,7 @@ export default function AskScreen() {
                 key={item.request_id}
                 item={item}
                 isExpired={true}
-                showActions={false} // All actions handled in detail page
+                showDetailsButton={true} // Show details button for expired requests too
               />
             ))
           ) : (
