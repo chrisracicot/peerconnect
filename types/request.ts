@@ -1,3 +1,4 @@
+// types/request.ts
 // reusable RequestItem type
 export interface RequestItem {
   request_id: number;
@@ -5,7 +6,6 @@ export interface RequestItem {
   course_id: string;
   title: string;
   description: string;
-  tags: string[];
   status: "pending" | "booked" | "completed";
   create_date: string;
   assigned_to?: string;
