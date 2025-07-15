@@ -16,14 +16,17 @@ import { useRouter } from "expo-router";
 import * as Yup from "yup";
 import { Formik } from "formik";
 import { supabase } from "../../lib/supabase";
-import { useFormData } from "@context/FormContext";
 
 const validationSchema = Yup.object().shape({
   email: Yup.string().email("Invalid email").required("Email is required"),
   password: Yup.string()
     .required("Password is required")
     .min(8, "Minimum 8 characters"),
-  autoLogin: Yup.boolean(),
+  // autoLogin: Yup.boolean(),
+  agreeToPolicy: Yup.boolean().oneOf(
+    [true],
+    "You must agree to the privacy policy"
+  ),
 });
 
 export default function Signup() {
@@ -43,16 +46,19 @@ export default function Signup() {
             initialValues={{
               email: "",
               password: "",
-              autoLogin: false,
+              // autoLogin: false,
+              agreeToPolicy: false,
             }}
             validationSchema={validationSchema}
             onSubmit={async (values, { setSubmitting }) => {
               setSubmitError("");
 
-              // 1. Sign up with Supabase
               const { data, error } = await supabase.auth.signUp({
                 email: values.email,
                 password: values.password,
+                options: {
+                  emailRedirectTo: `${process.env.EXPO_PUBLIC_WEB_URL}/auth/verify`,
+                },
               });
 
               if (error) {
@@ -61,25 +67,26 @@ export default function Signup() {
                 return;
               }
 
-              // 2. Send confirmation email (done automatically by Supabase)
+              // if (values.autoLogin) {
+              //   const { error: loginError } =
+              //     await supabase.auth.signInWithPassword({
+              //       email: values.email,
+              //       password: values.password,
+              //     });
 
-              // 3. Auto-login if checked, else go to login screen
-              if (values.autoLogin) {
-                const { error: loginError } =
-                  await supabase.auth.signInWithPassword({
-                    email: values.email,
-                    password: values.password,
-                  });
-
-                if (loginError) {
-                  setSubmitError("Account created, but login failed.");
-                  router.push("/");
-                } else {
-                  router.replace("/browse");
-                }
-              } else {
-                router.push("/"); // Go to login
-              }
+              //   if (loginError) {
+              //     setSubmitError("Account created, but login failed.");
+              //     router.push("/");
+              //   } else {
+              //     router.replace("/browse");
+              //   }
+              // } else {
+              //   router.push("/");
+              // }
+              setSubmitError(
+                "Account created! Please check your email to verify."
+              );
+              router.push("/");
 
               setSubmitting(false);
             }}
@@ -130,8 +137,32 @@ export default function Signup() {
                   <Text style={styles.errorText}>{errors.password}</Text>
                 )}
 
-                {/* Sign me in after checkbox */}
+                {/* Agree to privacy policy */}
                 <View style={styles.checker}>
+                  <Checkbox
+                    value={values.agreeToPolicy}
+                    onValueChange={() =>
+                      setFieldValue("agreeToPolicy", !values.agreeToPolicy)
+                    }
+                    style={styles.checkbox}
+                  />
+                  <Text style={styles.checkboxLabel}>
+                    You agree to our{" "}
+                    <Text
+                      style={{ color: "#007AFF" }}
+                      onPress={() => console.log("Privacy Policy")}
+                    >
+                      privacy policy
+                    </Text>
+                    .
+                  </Text>
+                </View>
+                {touched.agreeToPolicy && errors.agreeToPolicy && (
+                  <Text style={styles.errorText}>{errors.agreeToPolicy}</Text>
+                )}
+
+                {/* Auto login */}
+                {/* <View style={styles.checker}>
                   <Checkbox
                     value={values.autoLogin}
                     onValueChange={() =>
@@ -140,16 +171,19 @@ export default function Signup() {
                     style={styles.checkbox}
                   />
                   <Text style={styles.checkboxLabel}>Sign me in after</Text>
-                </View>
+                </View> */}
 
                 {submitError && (
                   <Text style={styles.errorText}>{submitError}</Text>
                 )}
 
                 <TouchableOpacity
-                  style={styles.button}
+                  style={[
+                    styles.button,
+                    !values.agreeToPolicy && styles.disabledButton,
+                  ]}
                   onPress={() => handleSubmit()}
-                  disabled={isSubmitting}
+                  disabled={!values.agreeToPolicy || isSubmitting}
                 >
                   {isSubmitting ? (
                     <ActivityIndicator color="#fff" />
@@ -162,7 +196,9 @@ export default function Signup() {
                   onPress={() => router.push("/")}
                   style={{ marginTop: 10 }}
                 >
-                  <Text style={styles.link}>Already have an account? Sign in</Text>
+                  <Text style={styles.link}>
+                    Already have an account? Sign in
+                  </Text>
                 </TouchableOpacity>
               </>
             )}
@@ -225,6 +261,9 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     alignItems: "center",
     marginTop: 10,
+  },
+  disabledButton: {
+    backgroundColor: "#ccc",
   },
   buttonText: {
     color: "#FFF",

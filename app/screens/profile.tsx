@@ -14,6 +14,10 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useFormData } from "@context/FormContext";
 import { useLocalSearchParams } from "expo-router";
 
+// used by temp logout
+import { supabase } from "@lib/supabase";
+import { useRouter } from "expo-router";
+
 function Icon(props: any) {
   return <FontAwesome size={20} style={{ marginBottom: -3 }} {...props} />;
 }
@@ -26,6 +30,7 @@ const ProfileScreen = () => {
     studentId: "00123456",
     bio: "Computer Science Student at SAIT",
   });
+  const router = useRouter();
 
   // Sample data (replace with actual data)
   const schedule = [
@@ -150,6 +155,25 @@ const ProfileScreen = () => {
           keyExtractor={(item) => item.id.toString()}
         />
       </View>
+
+      {/* TEMPORARY LOGOUT BUTTON FOR TESTING */}
+      <TouchableOpacity
+        style={{
+          backgroundColor: "#FF6B6B",
+          padding: 15,
+          margin: 20,
+          borderRadius: 8,
+          alignItems: "center",
+        }}
+        onPress={async () => {
+          await supabase.auth.signOut();
+          router.replace("/"); // adjust to your login route
+        }}
+      >
+        <Text style={{ color: "#fff", fontWeight: "bold" }}>
+          Log Out (TEMP)
+        </Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
