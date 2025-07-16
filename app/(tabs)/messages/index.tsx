@@ -125,7 +125,7 @@ export default function MessageListScreen() {
   }, []);
 
   const handleNavigateToChat = (partnerId: string) => {
-    router.push(`/(tabs)/messages/${partnerId}`);
+    router.push(`../(tabs)/messages/${partnerId}`);
   };
 
   if (loading) {
@@ -154,7 +154,7 @@ export default function MessageListScreen() {
               <Text style={styles.emptyText}>No conversations yet</Text>
               <TouchableOpacity
                   style={styles.newChatButton}
-                  onPress={() => router.push("/(tabs)/messages/new")}
+                  onPress={() => router.push("../(tabs)/messages/new")}
               >
                 <Text style={styles.buttonText}>Start a new chat</Text>
               </TouchableOpacity>
@@ -196,7 +196,7 @@ export default function MessageListScreen() {
               />
               <TouchableOpacity
                   style={styles.newChatFloatingButton}
-                  onPress={() => router.push("/(tabs)/messages/new")}
+                  onPress={() => router.push("../(tabs)/messages/new")}
               >
                 <Text style={styles.buttonText}>+ New Chat</Text>
               </TouchableOpacity>
