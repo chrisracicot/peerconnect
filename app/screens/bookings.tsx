@@ -203,7 +203,7 @@ export default function BookingsScreen() {
                   <RequestCard
                       key={item.request_id}
                       item={item}
-                      onTagPress={(tag) => console.log("Filter on:", tag)}
+
                   />
               ))}
             </View>
