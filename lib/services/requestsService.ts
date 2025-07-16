@@ -1,7 +1,8 @@
+// lib/supabase/requestsService.ts
 import { supabase } from "../supabase";
 import type { RequestItem, NewRequest } from "@models/request";
 
-// fetch all
+// Fetch all requests
 export async function fetchRequests(): Promise<RequestItem[]> {
   const { data, error } = await supabase.from("request").select("*");
 
@@ -18,7 +19,7 @@ export async function fetchRequests(): Promise<RequestItem[]> {
   return data;
 }
 
-// add new, return inserted row
+// Create new request, return inserted row
 export async function createRequest(data: NewRequest): Promise<RequestItem> {
   const { data: inserted, error } = await supabase
     .from("request")
@@ -29,15 +30,14 @@ export async function createRequest(data: NewRequest): Promise<RequestItem> {
   console.log("INSERT result:", inserted, "error:", error);
 
   if (error) {
-    //console.error("Insert error:", error);
     throw new Error(error.message || JSON.stringify(error));
   }
   if (!inserted) throw new Error("Insert returned null");
   return inserted;
 }
 
-// get by id
-export async function getRequestById(id: string): Promise<RequestItem | null> {
+// Get request by ID
+export async function getRequestById(id: number): Promise<RequestItem | null> {
   const { data, error } = await supabase
     .from("request")
     .select("*")
@@ -47,6 +47,69 @@ export async function getRequestById(id: string): Promise<RequestItem | null> {
   if (error) {
     console.error("Error fetching request by ID:", error);
     return null;
+  }
+
+  return data as RequestItem;
+}
+
+// Update request - allows partial updates
+export async function updateRequest(
+  id: number,
+  updates: Partial<Pick<RequestItem, "title" | "description">>
+): Promise<RequestItem> {
+  const { data, error } = await supabase
+    .from("request")
+    .update(updates)
+    .eq("request_id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error updating request:", error);
+    throw new Error(error.message || "Failed to update request");
+  }
+
+  if (!data) {
+    throw new Error("Update returned no data");
+  }
+
+  return data as RequestItem;
+}
+
+// Delete request
+export async function deleteRequest(id: number): Promise<void> {
+  const { error } = await supabase
+    .from("request")
+    .delete()
+    .eq("request_id", id);
+
+  if (error) {
+    console.error("Error deleting request:", error);
+    throw new Error(error.message || "Failed to delete request");
+  }
+}
+
+// Reactivate request by updating create_date to current timestamp
+export async function reactivateRequest(id: number): Promise<RequestItem> {
+  const newCreateDate = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from("request")
+    .update({
+      create_date: newCreateDate,
+      status: "pending", // Reset status to pending when reactivating
+    })
+    .eq("request_id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error reactivating request:", error);
+    throw new Error(error.message || "Failed to reactivate request");
+  }
+
+  if (!data) {
+    throw new Error("Reactivate returned no data");
   }
 
   return data as RequestItem;
