@@ -57,7 +57,7 @@ const Field = () => {
             <TouchableOpacity
               style={styles.button}
               onPress={() => {
-                router.push({ pathname: "/courses", params: { field: item } });
+                router.push("./courses");
               }}
             >
               <Text style={styles.text}>{item}</Text>

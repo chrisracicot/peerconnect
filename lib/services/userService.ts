@@ -1,4 +1,4 @@
-import { supabase } from "@lib/supabase";
+import { supabase } from "../supabase";
 
 export async function getCurrentUserId(): Promise<string> {
   const {

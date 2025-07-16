@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, Platform, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Platform,
+  StyleSheet,
+} from "react-native";
 import { Picker } from "@react-native-picker/picker";
 
 interface TagSelectorProps {
@@ -41,7 +47,10 @@ export default function TagSelector({
           </TouchableOpacity>
         ))}
         {!isPickerVisible ? (
-          <TouchableOpacity onPress={() => setPickerVisible(true)} style={styles.tagButton}>
+          <TouchableOpacity
+            onPress={() => setPickerVisible(true)}
+            style={styles.tagButton}
+          >
             <Text style={styles.tagText}>Add a tag +</Text>
           </TouchableOpacity>
         ) : (

@@ -1,9 +1,11 @@
+// app/_layout.tsx
 import { Stack } from "expo-router";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import "react-native-reanimated";
+import { FormDataProvider } from "@context/FormContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -34,8 +36,10 @@ export default function RootLayout() {
   }
 
   return (
-    <Stack>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-    </Stack>
+    <FormDataProvider>
+      <Stack>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      </Stack>
+    </FormDataProvider>
   );
 }
