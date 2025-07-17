@@ -2,6 +2,7 @@
 import React from "react";
 import { View, TouchableOpacity, Image, StyleSheet } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import useUnreadNotifications from "@components/hooks/useUnreadNotifications";
 
 function Icon(props: React.ComponentProps<typeof FontAwesome>) {
   return <FontAwesome size={24} style={{ marginBottom: -3 }} {...props} />;
@@ -16,6 +17,7 @@ export default function Header({
   onNotificationPress,
   onMessagePress,
 }: HeaderProps) {
+  const { unreadCount } = useUnreadNotifications();
   return (
     <View style={styles.header}>
       <Image
@@ -29,6 +31,7 @@ export default function Header({
           onPress={onNotificationPress}
         >
           <Icon name="bell" color="#1f1f1f" />
+          {unreadCount > 0 && <View style={styles.unreadDot} />}
         </TouchableOpacity>
         <TouchableOpacity style={styles.iconButton} onPress={onMessagePress}>
           <Icon name="comment-o" color="#1f1f1f" />
@@ -61,5 +64,14 @@ const styles = StyleSheet.create({
   },
   iconButton: {
     padding: 4,
+  },
+  unreadDot: {
+    position: "absolute",
+    top: 2,
+    right: 2,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "red",
   },
 });
