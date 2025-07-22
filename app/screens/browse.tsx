@@ -10,6 +10,7 @@ import {
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useFormData } from "@context/FormContext";
 import RequestCard from "@components/ui/RequestCard";
+import { isRequestExpired } from "@lib/utils/requestUtils"; 
 import Header from "@components/ui/Header";
 
 function Icon(props: React.ComponentProps<typeof FontAwesome>) {
@@ -19,7 +20,6 @@ function Icon(props: React.ComponentProps<typeof FontAwesome>) {
 export default function BrowseScreen() {
   const { requests } = useFormData();
   const [searchQuery, setSearchQuery] = useState("");
-  //const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [filteredRequests, setFilteredRequests] = useState(requests);
 
   const handleSearch = (text: string) => {
@@ -29,6 +29,13 @@ export default function BrowseScreen() {
   useEffect(() => {
     let results = requests;
 
+
+    // Filter expired requests
+     results = results.filter(
+       (request) => !isRequestExpired(request.create_date)
+     );
+
+    // Filter by search query
     if (searchQuery.trim()) {
       results = results.filter(
         (request) =>
@@ -46,20 +53,6 @@ export default function BrowseScreen() {
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      {/* <View style={styles.header}>
-        <Image
-          source={require("../../assets/images/sait.png")}
-          style={styles.logo}
-        />
-        <View style={styles.headerIcons}>
-          <TouchableOpacity>
-            <Icon name="bell" color="#1f1f1f" />
-          </TouchableOpacity>
-          <TouchableOpacity>
-            <Icon name="comment-o" color="#1f1f1f" />
-          </TouchableOpacity>
-        </View>
-      </View> */}
       <Header />
 
       {/* Search Bar */}
@@ -81,7 +74,9 @@ export default function BrowseScreen() {
           <RequestCard
             key={item.request_id}
             item={item}
-            // onTagPress={(tag) => console.log("Filter on:", tag)}
+            showCommentIcon={true}
+            showDetailsButton={true}
+            pageContext="browse"
           />
         ))}
       </ScrollView>
@@ -92,7 +87,7 @@ export default function BrowseScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#E2E2E2",
+    backgroundColor: "#FFF",
   },
   header: {
     flexDirection: "row",

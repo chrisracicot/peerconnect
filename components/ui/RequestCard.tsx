@@ -7,21 +7,29 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useRouter } from "expo-router";
 import type { RequestItem } from "@models/request";
+import { getDaysSinceCreation, isRequestExpired } from "@lib/utils/requestUtils";
 
 interface Props {
   item: RequestItem;
   isExpired?: boolean;
   showDetailsButton?: boolean; // Control whether to show "tap to view details"
-  onPress?: () => void; // Custom press handler
+  showCommentIcon?: boolean;
+  pageContext?: "ask" | "browse"; // Context of the screen (ask or browse) for styling purposes
+  onPress?: () => void;
 }
 
 export default function RequestCard({
   item,
   isExpired = false,
   showDetailsButton = true,
+  showCommentIcon = true,
+  pageContext = 'ask',
   onPress,
 }: Props) {
   const router = useRouter();
+
+  // Use utility function
+  const expired = isExpired ?? isRequestExpired(item.create_date);
 
   // Default navigation to detail page
   const handlePress = () => {
@@ -30,19 +38,13 @@ export default function RequestCard({
     } else {
       router.push({
         pathname: "/request/[id]" as const,
-        params: { id: String(item.request_id) },
+        params: { id: String(item.request_id), context: pageContext }, // Pass params to detail page
       });
     }
   };
 
-  // Calculate days since creation
-  const getDaysSinceCreation = (createDate: string): number => {
-    const created = new Date(createDate);
-    const now = new Date();
-    return Math.floor(
-      (now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)
-    );
-  };
+  // Use utility function
+  const daysSinceCreation = getDaysSinceCreation(item.create_date);
 
   // Get status badge component
   const getStatusBadge = () => {
@@ -72,8 +74,6 @@ export default function RequestCard({
     }
   };
 
-  const daysSinceCreation = getDaysSinceCreation(item.create_date);
-
   return (
     <TouchableOpacity
       style={[styles.card, isExpired && styles.expiredCard]}
@@ -87,11 +87,13 @@ export default function RequestCard({
         >
           {item.title}
         </Text>
-        <FontAwesome
-          name="comment-o"
-          size={20}
-          color={isExpired ? "#999" : "#A6192E"}
-        />
+        {showCommentIcon && (
+          <FontAwesome
+            name="comment-o"
+            size={20}
+            color={isExpired ? "#999" : "#A6192E"}
+          />
+        )}
       </View>
 
       <Text
@@ -113,7 +115,6 @@ export default function RequestCard({
       {/* Status badge */}
       {getStatusBadge()}
 
-      {/* Show details button only when requested */}
       {showDetailsButton && (
         <View style={styles.tapIndicator}>
           <Text style={styles.tapText}>Tap to view details</Text>
