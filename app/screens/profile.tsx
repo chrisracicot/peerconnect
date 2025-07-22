@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,112 +7,144 @@ import {
   FlatList,
   TouchableOpacity,
   Image,
-  ScrollView,
   SafeAreaView,
+  ScrollView,
+  Alert,
 } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { useFormData } from "@context/FormContext";
-import { useLocalSearchParams } from "expo-router";
-
-// used by temp logout
-import { supabase } from "@lib/supabase";
 import { useRouter } from "expo-router";
+import { useAuth } from "context/AuthContext";
+import { fetchRequests } from "@lib/services/requestsService";
+import {
+  getProfileById,
+  updateProfileById,
+} from "@lib/services/profileService";
+import type { UserProfile } from "@models/profile";
+import Header from "@components/ui/Header";
 
 function Icon(props: any) {
   return <FontAwesome size={20} style={{ marginBottom: -3 }} {...props} />;
 }
 
 const ProfileScreen = () => {
-  const [editMode, setEditMode] = useState(false);
-  const [profileData, setProfileData] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    studentId: "00123456",
-    bio: "Computer Science Student at SAIT",
-  });
+  const { user, signOut } = useAuth();
   const router = useRouter();
+
+  const [editMode, setEditMode] = useState(false);
+  const [bio, setBio] = useState("Placeholder Bio");
+
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+
+  const [postedRequests, setPostedRequests] = useState<any[]>([]);
+  const [loadingRequests, setLoadingRequests] = useState(true);
 
   // Sample data (replace with actual data)
   const schedule = [
     {
       id: 1,
-      course: "CPRG303",
+      course: "CPRG303 (Placeholder data)",
       day: "Monday",
       time: "9:00 AM - 11:00 AM",
     },
     // Add more schedule items...
   ];
 
-  const postedRequests = [
-    {
-      id: 1,
-      course: "CPRG303",
-      title: "Web Development Help",
-      description: "Need assistance with assignment 2",
-      tags: ["#assignment2", "#CPRG303"],
-    },
-    // Add more request items...
-  ];
+  useEffect(() => {
+    fetchRequests()
+      .then(setPostedRequests)
+      .catch((err) => console.error(err))
+      .finally(() => setLoadingRequests(false));
+  }, []);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    getProfileById(user.id)
+      .then(setProfile)
+      .catch((err) => console.error(err))
+      .finally(() => setLoadingProfile(false));
+  }, [user?.id]);
+
+  const handleDelete = () => {
+    Alert.alert(
+      "Delete Account",
+      "This feature is not available yet. Contact admin or implement a server function.",
+      [{ text: "OK" }]
+    );
+  };
+
+  const handleEdit = async () => {
+    if (editMode && user?.id && profile) {
+      const { error } = await updateProfileById(user.id, {
+        full_name: profile.full_name,
+        avatar_url: profile.avatar_url,
+      });
+
+      if (error) {
+        console.warn("Failed to update profile:", error);
+        Alert.alert("Error", "Profile update failed.");
+      } else {
+        Alert.alert("Success", "Profile updated.");
+      }
+    }
+
+    setEditMode((prev) => !prev);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
+      <Header />
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.heading}>Profile</Text>
-        <TouchableOpacity onPress={() => setEditMode(!editMode)}>
+        <TouchableOpacity onPress={handleEdit}>
           <Icon name={editMode ? "check" : "pencil"} color="#0066CC" />
         </TouchableOpacity>
       </View>
 
-      {/* Avatar Section */}
+      {/* Avatar */}
       <View style={styles.avatarContainer}>
         <Image
           source={require("../../assets/images/avatar.png")}
           style={styles.avatar}
         />
-        <Text style={styles.name}>{profileData.name}</Text>
-        <Text style={styles.studentId}>{profileData.studentId}</Text>
+        <Text style={styles.name}>
+          {loadingProfile ? "Loading..." : profile?.full_name ?? user?.email}
+        </Text>
+        {profile?.verified && (
+          <Text style={{ color: "green" }}>✔ Verified</Text>
+        )}
+        <Text style={styles.studentId}>{user?.id.slice(0, 8)}</Text>
       </View>
 
-      {/* Editable Fields */}
+      {/* Bio section */}
       {editMode && (
         <View style={styles.editFields}>
           <TextInput
             style={styles.input}
-            placeholder="Name"
-            value={profileData.name}
+            placeholder="Full Name"
+            value={profile?.full_name ?? ""}
             onChangeText={(text) =>
-              setProfileData({ ...profileData, name: text })
+              setProfile((prev) => prev && { ...prev, full_name: text })
             }
           />
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            value={profileData.email}
-            onChangeText={(text) =>
-              setProfileData({ ...profileData, email: text })
-            }
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Bio"
-            value={profileData.bio}
-            onChangeText={(text) =>
-              setProfileData({ ...profileData, bio: text })
-            }
-          />
+
+          {/* Avatar Upload Placeholder */}
+          <TouchableOpacity
+            onPress={() => {
+              // optionally launch image picker
+            }}
+            style={styles.avatarEditButton}
+          >
+            <Text style={{ color: "#0066CC", fontWeight: "bold" }}>
+              Change Avatar (TODO)
+            </Text>
+          </TouchableOpacity>
         </View>
       )}
 
-      {/* Bio Section */}
-      {!editMode && (
-        <View style={styles.bioSection}>
-          <Text style={styles.bioLabel}>Bio:</Text>
-          <Text style={styles.bioText}>{profileData.bio}</Text>
-        </View>
-      )}
-
-      {/* Schedule Section */}
+      {/* Schedule */}
       <View style={styles.sectionContainer}>
         <Text style={styles.sectionTitle}>Your Schedule</Text>
         <FlatList
@@ -129,11 +161,11 @@ const ProfileScreen = () => {
         />
       </View>
 
-      {/* Posted Requests Section */}
+      {/* Posted Requests */}
       <View style={styles.sectionContainer}>
         <Text style={styles.sectionTitle}>Posted Requests</Text>
         <FlatList
-          data={postedRequests}
+          data={postedRequests.filter((req) => req.user_id === user?.id)}
           renderItem={({ item }) => (
             <TouchableOpacity style={styles.requestCard}>
               <View style={styles.cardHeader}>
@@ -144,7 +176,7 @@ const ProfileScreen = () => {
               </View>
               <Text style={styles.description}>{item.description}</Text>
               <View style={styles.tagsContainer}>
-                {item.tags.map((tag) => (
+                {item.tags?.map((tag: string) => (
                   <Text key={tag} style={styles.tag}>
                     {tag}
                   </Text>
@@ -152,11 +184,27 @@ const ProfileScreen = () => {
               </View>
             </TouchableOpacity>
           )}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={(item) => item.request_id.toString()}
+          ListEmptyComponent={
+            !loadingRequests
+              ? () => (
+                  <Text
+                    style={{
+                      color: "#999",
+                      fontStyle: "italic",
+                      textAlign: "center",
+                      marginTop: 10,
+                    }}
+                  >
+                    No requests posted yet.
+                  </Text>
+                )
+              : null
+          }
         />
       </View>
 
-      {/* TEMPORARY LOGOUT BUTTON FOR TESTING */}
+      {/* Temporary Logout */}
       <TouchableOpacity
         style={{
           backgroundColor: "#FF6B6B",
@@ -166,23 +214,31 @@ const ProfileScreen = () => {
           alignItems: "center",
         }}
         onPress={async () => {
-          await supabase.auth.signOut();
-          router.replace("/"); // adjust to your login route
+          await signOut();
+          router.replace("/");
         }}
       >
-        <Text style={{ color: "#fff", fontWeight: "bold" }}>
-          Log Out (TEMP)
-        </Text>
+        <Text style={{ color: "#fff", fontWeight: "bold" }}>Log Out</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={handleDelete}
+        style={{
+          padding: 15,
+          backgroundColor: "#ccc",
+          marginTop: 10,
+          margin: 20,
+          borderRadius: 8,
+          alignItems: "center",
+        }}
+      >
+        <Text style={{ color: "#333" }}>Delete Account (Provisional)</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F5F5F5",
-  },
+  container: { flex: 1, backgroundColor: "#F5F5F5" },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -299,6 +355,16 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     fontSize: 12,
     color: "#666",
+  },
+  avatarEditButton: {
+    marginTop: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#0066CC",
+    alignItems: "center",
+    alignSelf: "center",
   },
 });
 
