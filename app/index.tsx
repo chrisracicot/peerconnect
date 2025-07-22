@@ -17,6 +17,7 @@ import { Formik } from "formik";
 import * as Yup from "yup";
 import { useRouter } from "expo-router";
 import { supabase } from "../lib/supabase";
+import { useAuth } from "context/AuthContext";
 
 const validationSchema = Yup.object().shape({
   email: Yup.string().email("Invalid email").required("Email is required"),
@@ -29,6 +30,7 @@ const validationSchema = Yup.object().shape({
 const LoginScreen = () => {
   const router = useRouter();
   const [submitError, setSubmitError] = useState("");
+  const { user, signIn } = useAuth();
 
   return (
     <KeyboardAvoidingView
@@ -55,10 +57,14 @@ const LoginScreen = () => {
             onSubmit={async (values, { setSubmitting }) => {
               setSubmitError("");
 
-              const { data, error } = await supabase.auth.signInWithPassword({
-                email: values.email,
-                password: values.password,
-              });
+              // const { data, error } = await supabase.auth.signInWithPassword({
+              //   email: values.email,
+              //   password: values.password,
+              // });
+              const { user: signedInUser, error } = await signIn(
+                values.email,
+                values.password
+              );
 
               if (error) {
                 if (error.message.includes("Invalid login credentials")) {
@@ -74,8 +80,9 @@ const LoginScreen = () => {
                 return;
               }
 
-              const user = data?.user;
-              if (user && !user.email_confirmed_at) {
+              //const user = data?.user;
+              //if (user && !user.email_confirmed_at) {
+              if (signedInUser && !signedInUser.email_confirmed_at) {
                 setSubmitError("Email not confirmed. Check your inbox.");
                 setSubmitting(false);
                 return;
