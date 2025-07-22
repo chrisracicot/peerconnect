@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   TextInput,
   ScrollView,
   TouchableOpacity,
-  Image,
   SafeAreaView,
 } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
@@ -30,6 +28,7 @@ export default function BrowseScreen() {
 
   useEffect(() => {
     let results = requests;
+
 
     // Filter expired requests
      results = results.filter(

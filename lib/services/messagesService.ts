@@ -1,13 +1,6 @@
 import { supabase } from "@lib/supabase";
-
-export interface Message {
-  id: number;
-  sender_id: string;
-  receiver_id: string;
-  content: string;
-  created_at: string;
-  is_read: boolean;
-}
+import { createNotification } from "./notificationService";
+import type { Message } from "@models/message";
 
 // Fetch conversation between currentUserId and receiverId
 export async function getConversationMessages(
@@ -32,13 +25,32 @@ export async function sendMessage(
   receiverId: string,
   content: string
 ): Promise<void> {
-  const { error } = await supabase.from("messages").insert({
-    sender_id: senderId,
-    receiver_id: receiverId,
-    content,
-  });
+  const trimmed = content.trim();
+  if (!trimmed) return;
 
-  if (error) throw error;
+  const { data, error } = await supabase
+    .from("messages")
+    .insert({
+      sender_id: senderId,
+      receiver_id: receiverId,
+      content: trimmed,
+    })
+    .select();
+
+  if (error || !data?.length) throw error;
+
+  const message = data[0];
+
+  // Create notification for receiver
+  await createNotification({
+    userId: receiverId,
+    type: "message",
+    content: "You received a new message",
+    data: {
+      messageId: message.id,
+      senderId,
+    },
+  });
 }
 
 // Mark all unread messages from receiverId -> currentUserId as read

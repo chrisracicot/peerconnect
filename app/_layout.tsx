@@ -4,8 +4,9 @@ import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import "react-native-reanimated";
+//import "react-native-reanimated";
 import { FormDataProvider } from "@context/FormContext";
+import { AuthProvider } from "context/AuthContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -36,10 +37,12 @@ export default function RootLayout() {
   }
 
   return (
-    <FormDataProvider>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
-    </FormDataProvider>
+    <AuthProvider>
+      <FormDataProvider>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        </Stack>
+      </FormDataProvider>
+    </AuthProvider>
   );
 }
