@@ -88,7 +88,7 @@ export default function BrowseScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#E2E2E2",
+    backgroundColor: "#FFF",
   },
   header: {
     flexDirection: "row",

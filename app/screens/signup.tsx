@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
     padding: 24,
     flex: 1,
     justifyContent: "center",
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#FFF",
   },
   heading: {
     fontSize: 28,
