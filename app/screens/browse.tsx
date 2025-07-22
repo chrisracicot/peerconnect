@@ -12,6 +12,8 @@ import {
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useFormData } from "@context/FormContext";
 import RequestCard from "@components/ui/RequestCard";
+import { isRequestExpired } from "@lib/utils/requestUtils"; 
+import Header from "@components/ui/Header";
 
 function Icon(props: React.ComponentProps<typeof FontAwesome>) {
   return <FontAwesome size={25} style={{ marginBottom: -3 }} {...props} />;
@@ -20,7 +22,6 @@ function Icon(props: React.ComponentProps<typeof FontAwesome>) {
 export default function BrowseScreen() {
   const { requests } = useFormData();
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilters, setActiveFilters] = useState<string[]>([]);
   const [filteredRequests, setFilteredRequests] = useState(requests);
 
   const handleSearch = (text: string) => {
@@ -30,12 +31,12 @@ export default function BrowseScreen() {
   useEffect(() => {
     let results = requests;
 
-    if (activeFilters.length > 0) {
-      results = results.filter((request) =>
-        activeFilters.every((filter) => request.tags.includes(filter))
-      );
-    }
+    // Filter expired requests
+     results = results.filter(
+       (request) => !isRequestExpired(request.create_date)
+     );
 
+    // Filter by search query
     if (searchQuery.trim()) {
       results = results.filter(
         (request) =>
@@ -43,33 +44,17 @@ export default function BrowseScreen() {
           request.description
             .toLowerCase()
             .includes(searchQuery.toLowerCase()) ||
-          request.course_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          request.tags.some((tag) =>
-            tag.toLowerCase().includes(searchQuery.toLowerCase())
-          )
+          request.course_id.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
     setFilteredRequests(results);
-  }, [activeFilters, searchQuery, requests]);
+  }, [searchQuery, requests]);
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <Image
-          source={require("../../assets/images/sait.png")}
-          style={styles.logo}
-        />
-        <View style={styles.headerIcons}>
-          <TouchableOpacity>
-            <Icon name="bell" color="#1f1f1f" />
-          </TouchableOpacity>
-          <TouchableOpacity>
-            <Icon name="comment-o" color="#1f1f1f" />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <Header />
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
@@ -90,7 +75,9 @@ export default function BrowseScreen() {
           <RequestCard
             key={item.request_id}
             item={item}
-            onTagPress={(tag) => console.log("Filter on:", tag)}
+            showCommentIcon={true}
+            showDetailsButton={true}
+            pageContext="browse"
           />
         ))}
       </ScrollView>

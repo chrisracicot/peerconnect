@@ -33,7 +33,7 @@ import {
 import type { RequestItem } from "@models/request";
 
 export default function RequestDetailScreen() {
-  const { id } = useLocalSearchParams();
+  const { id, context } = useLocalSearchParams();
   const navigation = useNavigation();
   const router = useRouter();
   const { setRequests } = useFormData();
@@ -44,6 +44,8 @@ export default function RequestDetailScreen() {
   const [editedTitle, setEditedTitle] = useState("");
   const [editedDescription, setEditedDescription] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const isBrowseContext = context === "browse";
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -326,60 +328,63 @@ export default function RequestDetailScreen() {
           </View>
 
           {/* Action Buttons */}
-          <View style={styles.buttonsContainer}>
-            {isEditing ? (
-              <>
-                <TouchableOpacity
-                  style={[styles.saveButton, saving && styles.disabledButton]}
-                  onPress={handleSave}
-                  disabled={saving}
-                >
-                  {saving ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Text style={styles.saveButtonText}>Save Changes</Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  onPress={handleCancel}
-                  disabled={saving}
-                >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <TouchableOpacity
-                  style={styles.editButton}
-                  onPress={handleEdit}
-                >
-                  <FontAwesome name="edit" size={16} color="#fff" />
-                  <Text style={styles.editButtonText}>Edit Request</Text>
-                </TouchableOpacity>
-
-                {expired && (
+          {/* Only show action button in non-browse mode*/}
+          {!isBrowseContext && (
+            <View style={styles.buttonsContainer}>
+              {isEditing ? (
+                <>
                   <TouchableOpacity
-                    style={styles.reactivateButton}
-                    onPress={handleReactivate}
+                    style={[styles.saveButton, saving && styles.disabledButton]}
+                    onPress={handleSave}
+                    disabled={saving}
                   >
-                    <FontAwesome name="refresh" size={16} color="#fff" />
-                    <Text style={styles.reactivateButtonText}>
-                      Reactivate Request
-                    </Text>
+                    {saving ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={styles.saveButtonText}>Save Changes</Text>
+                    )}
                   </TouchableOpacity>
-                )}
+                  <TouchableOpacity
+                    style={styles.cancelButton}
+                    onPress={handleCancel}
+                    disabled={saving}
+                  >
+                    <Text style={styles.cancelButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={styles.editButton}
+                    onPress={handleEdit}
+                  >
+                    <FontAwesome name="edit" size={16} color="#fff" />
+                    <Text style={styles.editButtonText}>Edit Request</Text>
+                  </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={handleDelete}
-                >
-                  <FontAwesome name="trash" size={16} color="#fff" />
-                  <Text style={styles.deleteButtonText}>Delete Request</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
+                  {expired && (
+                    <TouchableOpacity
+                      style={styles.reactivateButton}
+                      onPress={handleReactivate}
+                    >
+                      <FontAwesome name="refresh" size={16} color="#fff" />
+                      <Text style={styles.reactivateButtonText}>
+                        Reactivate Request
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={handleDelete}
+                  >
+                    <FontAwesome name="trash" size={16} color="#fff" />
+                    <Text style={styles.deleteButtonText}>Delete Request</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

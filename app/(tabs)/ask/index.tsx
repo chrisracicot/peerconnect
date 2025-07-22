@@ -93,6 +93,8 @@ export default function AskScreen() {
                 item={item}
                 isExpired={false}
                 showDetailsButton={true} // Show details button on main index
+                showCommentIcon={false} // Hide message icon in ask page
+                pageContext="ask"
               />
             ))
           ) : (
@@ -115,6 +117,8 @@ export default function AskScreen() {
                 item={item}
                 isExpired={true}
                 showDetailsButton={true} // Show details button for expired requests too
+                showCommentIcon={false} // Hide message icon in ask page
+                pageContext="ask"
               />
             ))
           ) : (
