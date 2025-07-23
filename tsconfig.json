@@ -21,7 +21,8 @@
       ],
       "@models/*": ["types/*"],
       "@lib/*": ["lib/*"],
-    }
+    },
+    "types": ["jest"]
   },
   "include": [
     "**/*",

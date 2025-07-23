@@ -7,10 +7,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "test": "jest --watchAll"
-  },
-  "jest": {
-    "preset": "jest-expo"
+    "test": "jest"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
@@ -44,8 +41,10 @@
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
+    "@types/jest": "^30.0.0",
     "@types/react": "~19.0.10",
     "babel-plugin-module-resolver": "^5.0.2",
+    "dotenv": "^17.2.0",
     "jest": "~29.7.0",
     "jest-expo": "^53.0.0",
     "react-test-renderer": "19.0.0",
