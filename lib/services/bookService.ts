@@ -1,4 +1,3 @@
-// lib/bookingsService.ts
 import { supabase } from "../supabase";
 
 export interface Booking {

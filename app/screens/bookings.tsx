@@ -8,7 +8,8 @@ import {
   TouchableOpacity,
   RefreshControl,
   Modal,
-  Pressable
+  Pressable,
+  SafeAreaView
 } from "react-native";
 import { useFormData } from "@context/FormContext";
 import RequestCard from "@components/ui/RequestCard";
@@ -93,12 +94,10 @@ export default function BookingsScreen() {
   const setupRealtimeSubscription = async () => {
     if (!userId) return;
 
-    // Remove existing channel if it exists
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
     }
 
-    // Create new channel with broader subscription
     const channel = supabase
         .channel('bookings_changes')
         .on(
@@ -164,15 +163,15 @@ export default function BookingsScreen() {
 
   if (loading && !refreshing) {
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
           <ActivityIndicator size="large" color="#A6192E" />
-        </View>
+        </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity
               style={styles.retryButton}
@@ -180,105 +179,108 @@ export default function BookingsScreen() {
           >
             <Text style={styles.retryButtonText}>Try Again</Text>
           </TouchableOpacity>
-        </View>
+        </SafeAreaView>
     );
   }
 
   return (
-      <ScrollView
-          style={styles.container}
-          refreshControl={
-            <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                colors={["#A6192E"]}
-            />
-          }
-      >
-        {/* Booked Requests */}
-        {bookedRequests.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Your Booked Services</Text>
-              {bookedRequests.map((item) => (
-                  <RequestCard
-                      key={item.request_id}
-                      item={item}
-
-                  />
-              ))}
-            </View>
-        )}
-
-        {/* Scheduled Appointments */}
-        {bookings.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Your Appointments</Text>
-              {bookings.map((booking) => (
-                  <BookingCard
-                      key={booking.id}
-                      booking={booking}
-                      onPress={() => handleBookingPress(booking)}
-                  />
-              ))}
-            </View>
-        )}
-
-        {bookedRequests.length === 0 && bookings.length === 0 && (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No bookings or appointments yet</Text>
-            </View>
-        )}
-
-        {/* Status Update Modal */}
-        <Modal
-            visible={showStatusModal}
-            transparent={true}
-            animationType="slide"
-            onRequestClose={() => setShowStatusModal(false)}
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView
+            style={styles.container}
+            refreshControl={
+              <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  colors={["#A6192E"]}
+              />
+            }
         >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>Update Booking</Text>
+          {/* Booked Requests */}
+          {bookedRequests.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Your Booked Services</Text>
+                {bookedRequests.map((item) => (
+                    <RequestCard
+                        key={item.request_id}
+                        item={item}
+                    />
+                ))}
+              </View>
+          )}
 
-              <View style={styles.statusButtonsContainer}>
-                <Pressable
-                    style={[styles.statusButton, styles.pendingButton]}
-                    onPress={() => updateBookingStatus("pending")}
-                >
-                  <Text style={styles.statusButtonText}>Pending</Text>
-                </Pressable>
+          {/* Scheduled Appointments */}
+          {bookings.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Your Appointments</Text>
+                {bookings.map((booking) => (
+                    <BookingCard
+                        key={booking.id}
+                        booking={booking}
+                        onPress={() => handleBookingPress(booking)}
+                    />
+                ))}
+              </View>
+          )}
+
+          {bookedRequests.length === 0 && bookings.length === 0 && (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyText}>No bookings or appointments yet</Text>
+              </View>
+          )}
+
+          {/* Status Update Modal */}
+          <Modal
+              visible={showStatusModal}
+              transparent={true}
+              animationType="slide"
+              onRequestClose={() => setShowStatusModal(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContainer}>
+                <Text style={styles.modalTitle}>Update Booking</Text>
+
+                <View style={styles.statusButtonsContainer}>
+                  <Pressable
+                      style={[styles.statusButton, styles.pendingButton]}
+                      onPress={() => updateBookingStatus("pending")}
+                  >
+                    <Text style={styles.statusButtonText}>Pending</Text>
+                  </Pressable>
+
+                  <Pressable
+                      style={[styles.statusButton, styles.confirmedButton]}
+                      onPress={() => updateBookingStatus("confirmed")}
+                  >
+                    <Text style={styles.statusButtonText}>Confirm</Text>
+                  </Pressable>
+
+                  <Pressable
+                      style={[styles.statusButton, styles.canceledButton]}
+                      onPress={() => updateBookingStatus("canceled")}
+                  >
+                    <Text style={styles.statusButtonText}>Cancel</Text>
+                  </Pressable>
+                </View>
 
                 <Pressable
-                    style={[styles.statusButton, styles.confirmedButton]}
-                    onPress={() => updateBookingStatus("confirmed")}
+                    style={styles.closeButton}
+                    onPress={() => setShowStatusModal(false)}
                 >
-                  <Text style={styles.statusButtonText}>Confirm</Text>
-                </Pressable>
-
-                <Pressable
-                    style={[styles.statusButton, styles.canceledButton]}
-                    onPress={() => updateBookingStatus("canceled")}
-                >
-                  <Text style={styles.statusButtonText}>Cancel</Text>
+                  <Text style={styles.closeButtonText}>Close</Text>
                 </Pressable>
               </View>
-
-              <Pressable
-                  style={styles.closeButton}
-                  onPress={() => setShowStatusModal(false)}
-              >
-                <Text style={styles.closeButtonText}>Close</Text>
-              </Pressable>
             </View>
-          </View>
-        </Modal>
-      </ScrollView>
+          </Modal>
+        </ScrollView>
+      </SafeAreaView>
   );
 }
 
-// ... (keep the styles the same)
-
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
   container: {
     flex: 1,
     backgroundColor: "#fff",

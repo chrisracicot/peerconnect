@@ -6,6 +6,7 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
+  SafeAreaView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { supabase } from "../../../lib/supabase";
@@ -36,7 +37,6 @@ export default function MessageListScreen() {
         return;
       }
 
-      // Get all messages involving current user
       const { data: messages, error: messagesError } = await supabase
           .from("messages")
           .select("*")
@@ -45,7 +45,7 @@ export default function MessageListScreen() {
 
       if (messagesError) throw messagesError;
 
-      // Get unique partner IDs
+
       const partnerIds = Array.from(
           new Set(
               messages?.map((msg) =>
@@ -59,7 +59,7 @@ export default function MessageListScreen() {
         return;
       }
 
-      // Get all partner profiles
+
       const { data: profiles, error: profilesError } = await supabase
           .from("profiles")
           .select("id, full_name")
@@ -67,12 +67,13 @@ export default function MessageListScreen() {
 
       if (profilesError) throw profilesError;
 
-      // Create conversation list with most recent message
+
       const conversations = partnerIds.map((partnerId) => {
         const partnerMessages = messages?.filter(
             (msg) => msg.sender_id === partnerId || msg.receiver_id === partnerId
         );
         const lastMessage = partnerMessages?.[0];
+
         const profile = profiles?.find((p) => p.id === partnerId);
 
         return {
@@ -83,7 +84,6 @@ export default function MessageListScreen() {
         };
       });
 
-      // Sort by most recent message
       conversations.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
       setChatPartners(conversations);
@@ -98,7 +98,6 @@ export default function MessageListScreen() {
   useEffect(() => {
     fetchRecentChats();
 
-    // Set up real-time subscription
     const channel = supabase
         .channel("messages_changes")
         .on(
@@ -109,7 +108,6 @@ export default function MessageListScreen() {
               table: "messages",
             },
             () => {
-              // Refresh the conversation list when any message changes
               fetchRecentChats();
             }
         )
@@ -130,25 +128,25 @@ export default function MessageListScreen() {
 
   if (loading) {
     return (
-        <View style={styles.loadingContainer}>
+        <SafeAreaView style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#A6192E" />
-        </View>
+        </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-        <View style={styles.errorContainer}>
+        <SafeAreaView style={styles.errorContainer}>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={fetchRecentChats}>
             <Text style={styles.retryButtonText}>Try Again</Text>
           </TouchableOpacity>
-        </View>
+        </SafeAreaView>
     );
   }
 
   return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         {chatPartners.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>No conversations yet</Text>
@@ -202,11 +200,9 @@ export default function MessageListScreen() {
               </TouchableOpacity>
             </>
         )}
-      </View>
+      </SafeAreaView>
   );
 }
-
-
 
 const styles = StyleSheet.create({
   container: {

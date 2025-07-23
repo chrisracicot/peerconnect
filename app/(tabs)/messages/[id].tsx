@@ -11,7 +11,7 @@ import {
   SafeAreaView,
   ActivityIndicator,
   Pressable,
-  Modal
+  Modal,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../../../lib/supabase';
@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { createBooking } from "@lib/services/bookService";
+import { getConversationMessages, sendMessage } from "@lib/services/messagesService";
 
 interface Message {
   id: number;
@@ -27,12 +28,6 @@ interface Message {
   content: string;
   created_at: string;
   is_read: boolean;
-  safety_analysis?: {
-    hate?: number;
-    selfHarm?: number;
-    sexual?: number;
-    violence?: number;
-  };
 }
 
 interface Profile {
@@ -107,17 +102,8 @@ export default function ChatScreen() {
     const fetchMessages = async () => {
       try {
         setError(null);
-        const { data, error: fetchError } = await supabase
-            .from('messages')
-            .select('*')
-            .or(
-                `and(sender_id.eq.${currentUserId},receiver_id.eq.${receiverIdStr}),` +
-                `and(sender_id.eq.${receiverIdStr},receiver_id.eq.${currentUserId})`
-            )
-            .order('created_at', { ascending: true });
-
-        if (fetchError) throw fetchError;
-        if (isMounted) setMessages(data || []);
+        const messages = await getConversationMessages(currentUserId, receiverIdStr);
+        if (isMounted) setMessages(messages);
       } catch (err) {
         console.error('Error fetching messages:', err);
         if (isMounted) setError('Failed to load messages');
@@ -216,13 +202,7 @@ export default function ChatScreen() {
     }, 100);
 
     try {
-      const { error } = await supabase.from('messages').insert({
-        sender_id: currentUserId,
-        receiver_id: receiverIdStr,
-        content: newMessage.trim(),
-      });
-
-      if (error) throw error;
+      await sendMessage(currentUserId, receiverIdStr, newMessage.trim());
     } catch (err) {
       console.error('Error sending message:', err);
       setMessages(prev => prev.filter(m => m.id !== tempId));
@@ -242,9 +222,7 @@ export default function ChatScreen() {
           <Text style={isCurrentUser ? styles.currentUserText : styles.otherUserText}>
             {item.content}
           </Text>
-          {item.safety_analysis && (
-              <Text style={styles.safetyIndicator}>⚠️ Moderated</Text>
-          )}
+
           <Text style={styles.messageTime}>
             {new Date(item.created_at).toLocaleTimeString([], {
               hour: '2-digit',
@@ -621,7 +599,6 @@ const styles = StyleSheet.create({
   modalButtonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-
   },
   modalButton: {
     flex: 1,
@@ -630,7 +607,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginHorizontal: 5,
     marginVertical: 5,
-
   },
   cancelButton: {
     backgroundColor: '#E5E5EA',

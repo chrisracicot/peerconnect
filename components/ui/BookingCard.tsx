@@ -65,18 +65,18 @@ const styles = StyleSheet.create({
     status: {
         fontSize: 12,
         fontWeight: "bold",
-        color: "#FFA500", // pending - orange
+        color: "#FFA500",
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 4,
         backgroundColor: "#FFF3E0",
     },
     statusConfirmed: {
-        color: "#4CAF50", // confirmed - green
+        color: "#4CAF50",
         backgroundColor: "#E8F5E9",
     },
     statusCanceled: {
-        color: "#F44336", // canceled - red
+        color: "#F44336",
         backgroundColor: "#FFEBEE",
     },
 });

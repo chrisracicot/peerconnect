@@ -9,7 +9,6 @@ export interface Message {
   is_read: boolean;
 }
 
-// Fetch conversation between currentUserId and receiverId
 export async function getConversationMessages(
   currentUserId: string,
   receiverId: string
@@ -26,7 +25,6 @@ export async function getConversationMessages(
   return data || [];
 }
 
-// Send a new message
 export async function sendMessage(
   senderId: string,
   receiverId: string,
