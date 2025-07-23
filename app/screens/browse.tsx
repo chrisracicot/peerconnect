@@ -29,6 +29,7 @@ export default function BrowseScreen() {
   useEffect(() => {
     let results = requests;
 
+
     // Filter expired requests
      results = results.filter(
        (request) => !isRequestExpired(request.create_date)
