@@ -64,7 +64,7 @@ export default function NewChatScreen() {
           renderItem={({ item }) => (
             <TouchableOpacity
               style={styles.userItem}
-              onPress={() => router.push(`/(tabs)/messages/${item.id}`)}
+              onPress={() => router.push(`../(tabs)/messages/${item.id}`)}
             >
               <Text style={styles.userName}>{item.full_name}</Text>
             </TouchableOpacity>

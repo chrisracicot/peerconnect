@@ -15,14 +15,13 @@ import { useState } from "react";
 import { useRouter } from "expo-router";
 import * as Yup from "yup";
 import { Formik } from "formik";
-import { supabase } from "../../lib/supabase";
+import { useAuth } from "context/AuthContext";
 
 const validationSchema = Yup.object().shape({
   email: Yup.string().email("Invalid email").required("Email is required"),
   password: Yup.string()
     .required("Password is required")
     .min(8, "Minimum 8 characters"),
-  // autoLogin: Yup.boolean(),
   agreeToPolicy: Yup.boolean().oneOf(
     [true],
     "You must agree to the privacy policy"
@@ -32,6 +31,7 @@ const validationSchema = Yup.object().shape({
 export default function Signup() {
   const [submitError, setSubmitError] = useState("");
   const router = useRouter();
+  const { signUp } = useAuth();
 
   return (
     <KeyboardAvoidingView
@@ -46,20 +46,13 @@ export default function Signup() {
             initialValues={{
               email: "",
               password: "",
-              // autoLogin: false,
               agreeToPolicy: false,
             }}
             validationSchema={validationSchema}
             onSubmit={async (values, { setSubmitting }) => {
               setSubmitError("");
 
-              const { data, error } = await supabase.auth.signUp({
-                email: values.email,
-                password: values.password,
-                options: {
-                  emailRedirectTo: `${process.env.EXPO_PUBLIC_WEB_URL}/auth/verify`,
-                },
-              });
+              const { error } = await signUp(values.email, values.password);
 
               if (error) {
                 setSubmitError(error.message);
@@ -67,22 +60,6 @@ export default function Signup() {
                 return;
               }
 
-              // if (values.autoLogin) {
-              //   const { error: loginError } =
-              //     await supabase.auth.signInWithPassword({
-              //       email: values.email,
-              //       password: values.password,
-              //     });
-
-              //   if (loginError) {
-              //     setSubmitError("Account created, but login failed.");
-              //     router.push("/");
-              //   } else {
-              //     router.replace("/browse");
-              //   }
-              // } else {
-              //   router.push("/");
-              // }
               setSubmitError(
                 "Account created! Please check your email to verify."
               );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   FlatList,
@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { supabase } from "../../../lib/supabase";
+import {RealtimeChannel} from "@supabase/supabase-js";
 
 interface ChatPartner {
   id: string;
@@ -22,14 +23,14 @@ export default function MessageListScreen() {
   const [chatPartners, setChatPartners] = useState<ChatPartner[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   const fetchRecentChats = async () => {
     try {
       setError(null);
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser();
+      setLoading(true);
+
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
         router.push("/");
         return;
@@ -37,20 +38,20 @@ export default function MessageListScreen() {
 
       // Get all messages involving current user
       const { data: messages, error: messagesError } = await supabase
-        .from("messages")
-        .select("*")
-        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-        .order("created_at", { ascending: false });
+          .from("messages")
+          .select("*")
+          .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+          .order("created_at", { ascending: false });
 
       if (messagesError) throw messagesError;
 
       // Get unique partner IDs
       const partnerIds = Array.from(
-        new Set(
-          messages?.map((msg) =>
-            msg.sender_id === user.id ? msg.receiver_id : msg.sender_id
+          new Set(
+              messages?.map((msg) =>
+                  msg.sender_id === user.id ? msg.receiver_id : msg.sender_id
+              )
           )
-        )
       );
 
       if (partnerIds.length === 0) {
@@ -60,16 +61,16 @@ export default function MessageListScreen() {
 
       // Get all partner profiles
       const { data: profiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, full_name")
-        .in("id", partnerIds);
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", partnerIds);
 
       if (profilesError) throw profilesError;
 
       // Create conversation list with most recent message
       const conversations = partnerIds.map((partnerId) => {
         const partnerMessages = messages?.filter(
-          (msg) => msg.sender_id === partnerId || msg.receiver_id === partnerId
+            (msg) => msg.sender_id === partnerId || msg.receiver_id === partnerId
         );
         const lastMessage = partnerMessages?.[0];
         const profile = profiles?.find((p) => p.id === partnerId);
@@ -81,6 +82,9 @@ export default function MessageListScreen() {
           timestamp: lastMessage?.created_at || new Date().toISOString(),
         };
       });
+
+      // Sort by most recent message
+      conversations.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
       setChatPartners(conversations);
     } catch (err) {
@@ -94,101 +98,115 @@ export default function MessageListScreen() {
   useEffect(() => {
     fetchRecentChats();
 
-    const subscription = supabase
-      .channel("messages")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "messages" },
-        () => fetchRecentChats()
-      )
-      .subscribe();
+    // Set up real-time subscription
+    const channel = supabase
+        .channel("messages_changes")
+        .on(
+            "postgres_changes",
+            {
+              event: "*",
+              schema: "public",
+              table: "messages",
+            },
+            () => {
+              // Refresh the conversation list when any message changes
+              fetchRecentChats();
+            }
+        )
+        .subscribe();
+
+    channelRef.current = channel;
 
     return () => {
-      supabase.removeChannel(subscription);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+      }
     };
   }, []);
 
   const handleNavigateToChat = (partnerId: string) => {
-    router.push(`/(tabs)/messages/${partnerId}`);
+    router.push(`../(tabs)/messages/${partnerId}`);
   };
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#A6192E" />
-      </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#A6192E" />
+        </View>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={fetchRecentChats}>
-          <Text style={styles.retryButtonText}>Try Again</Text>
-        </TouchableOpacity>
-      </View>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchRecentChats}>
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {chatPartners.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>No conversations yet</Text>
-          <TouchableOpacity
-            style={styles.newChatButton}
-            onPress={() => router.push("/(tabs)/messages/new")}
-          >
-            <Text style={styles.buttonText}>Start a new chat</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <>
-          <FlatList
-            data={chatPartners}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
+      <View style={styles.container}>
+        {chatPartners.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No conversations yet</Text>
               <TouchableOpacity
-                style={styles.chatItem}
-                onPress={() => handleNavigateToChat(item.id)}
+                  style={styles.newChatButton}
+                  onPress={() => router.push("../(tabs)/messages/new")}
               >
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>
-                    {item.name.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-                <View style={styles.chatContent}>
-                  <Text style={styles.chatName}>{item.name}</Text>
-                  <Text
-                    style={styles.lastMessage}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {item.lastMessage}
-                  </Text>
-                </View>
-                <Text style={styles.timestamp}>
-                  {new Date(item.timestamp).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </Text>
+                <Text style={styles.buttonText}>Start a new chat</Text>
               </TouchableOpacity>
-            )}
-            contentContainerStyle={styles.listContent}
-          />
-          <TouchableOpacity
-            style={styles.newChatFloatingButton}
-            onPress={() => router.push("/(tabs)/messages/new")}
-          >
-            <Text style={styles.buttonText}>+ New Chat</Text>
-          </TouchableOpacity>
-        </>
-      )}
-    </View>
+            </View>
+        ) : (
+            <>
+              <FlatList
+                  data={chatPartners}
+                  keyExtractor={(item) => item.id}
+                  renderItem={({ item }) => (
+                      <TouchableOpacity
+                          style={styles.chatItem}
+                          onPress={() => handleNavigateToChat(item.id)}
+                      >
+                        <View style={styles.avatar}>
+                          <Text style={styles.avatarText}>
+                            {item.name.charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                        <View style={styles.chatContent}>
+                          <Text style={styles.chatName}>{item.name}</Text>
+                          <Text
+                              style={styles.lastMessage}
+                              numberOfLines={1}
+                              ellipsizeMode="tail"
+                          >
+                            {item.lastMessage}
+                          </Text>
+                        </View>
+                        <Text style={styles.timestamp}>
+                          {new Date(item.timestamp).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </Text>
+                      </TouchableOpacity>
+                  )}
+                  contentContainerStyle={styles.listContent}
+              />
+              <TouchableOpacity
+                  style={styles.newChatFloatingButton}
+                  onPress={() => router.push("../(tabs)/messages/new")}
+              >
+                <Text style={styles.buttonText}>+ New Chat</Text>
+              </TouchableOpacity>
+            </>
+        )}
+      </View>
   );
 }
+
+
 
 const styles = StyleSheet.create({
   container: {

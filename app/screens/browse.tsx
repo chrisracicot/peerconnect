@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   TextInput,
   ScrollView,
   TouchableOpacity,
-  Image,
   SafeAreaView,
 } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
@@ -45,10 +43,12 @@ export default function BrowseScreen() {
             .toLowerCase()
             .includes(searchQuery.toLowerCase()) ||
           request.course_id.toLowerCase().includes(searchQuery.toLowerCase())
+          request.course_id.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
     setFilteredRequests(results);
+  }, [searchQuery, requests]);
   }, [searchQuery, requests]);
 
   return (

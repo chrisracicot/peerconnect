@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -11,26 +11,31 @@ import {
   SafeAreaView,
   ActivityIndicator,
   Pressable,
+  Modal,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { supabase } from "../../../lib/supabase";
 import { Ionicons } from "@expo/vector-icons";
-
-interface Message {
-  id: number;
-  sender_id: string;
-  receiver_id: string;
-  content: string;
-  created_at: string;
-  is_read: boolean;
-}
+import { RealtimeChannel } from "@supabase/supabase-js";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { createBooking } from "@lib/services/bookService";
+import {
+  sendMessage,
+  getConversationMessages,
+  markMessagesAsRead,
+} from "@lib/services/messagesService";
+import {
+  getUserNotifications,
+  markNotificationAsRead,
+} from "@lib/services/notificationService";
+import type { Message } from "@models/message";
+import useUnreadNotifications from "@components/hooks/useUnreadNotifications";
 
 interface Profile {
   id: string;
   full_name: string;
 }
 
-// UUID validation function
 const isValidUUID = (id: string | string[]): id is string => {
   if (Array.isArray(id)) return false;
   const uuidRegex =
@@ -47,9 +52,15 @@ export default function ChatScreen() {
   const [loading, setLoading] = useState(true);
   const [recipient, setRecipient] = useState<Profile | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  // Validate and extract receiverId
+  const channelRef = useRef<RealtimeChannel | null>(null);
   const receiverIdStr = isValidUUID(receiverId) ? receiverId : null;
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [bookingTitle, setBookingTitle] = useState("");
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const flatListRef = useRef<FlatList>(null);
+  const { refetchUnreadCount } = useUnreadNotifications();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -70,7 +81,6 @@ export default function ChatScreen() {
           return;
         }
 
-        // Fetch recipient profile
         const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("id, full_name")
@@ -93,52 +103,134 @@ export default function ChatScreen() {
   useEffect(() => {
     if (!currentUserId || !receiverIdStr) return;
 
-    const fetchMessages = async () => {
+    // mark as read
+    const markAsRead = async () => {
       try {
-        setError(null);
-        const { data, error: fetchError } = await supabase
-          .from("messages")
-          .select("*")
-          .or(
-            `and(sender_id.eq.${currentUserId},receiver_id.eq.${receiverIdStr}),` +
-              `and(sender_id.eq.${receiverIdStr},receiver_id.eq.${currentUserId})`
-          )
-          .order("created_at", { ascending: true });
+        // Mark unread messages as read
+        await markMessagesAsRead(currentUserId, receiverIdStr);
 
-        if (fetchError) throw fetchError;
-        setMessages(data || []);
+        // Mark related unread notifications as read
+        const allNotifications = await getUserNotifications(currentUserId);
+        const messageNotifsFromSender = allNotifications.filter(
+          (n) =>
+            n.type === "message" &&
+            n.data?.senderId === receiverIdStr &&
+            !n.is_read
+        );
+
+        await Promise.all(
+          messageNotifsFromSender.map((n) => markNotificationAsRead(n.id))
+        );
+        await refetchUnreadCount();
       } catch (err) {
-        console.error("Error fetching messages:", err);
-        setError("Failed to load messages");
-      } finally {
-        setLoading(false);
+        console.error("Error marking messages/notifications as read:", err);
       }
     };
 
-    fetchMessages();
+    let isMounted = true;
 
-    const subscription = supabase
-      .channel("messages")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "messages",
-          filter: `or(and(sender_id.eq.${currentUserId},receiver_id.eq.${receiverIdStr}),and(sender_id.eq.${receiverIdStr},receiver_id.eq.${currentUserId}))`,
-        },
-        (payload) => {
-          if (payload.eventType === "INSERT") {
-            setMessages((prev) => [...prev, payload.new as Message]);
+    const fetchMessages = async () => {
+      try {
+        setError(null);
+
+        // const { data, error: fetchError } = await supabase
+        //   .from("messages")
+        //   .select("*")
+        //   .or(
+        //     `and(sender_id.eq.${currentUserId},receiver_id.eq.${receiverIdStr}),` +
+        //       `and(sender_id.eq.${receiverIdStr},receiver_id.eq.${currentUserId})`
+        //   )
+        //   .order("created_at", { ascending: true });
+
+        // if (fetchError) throw fetchError;
+        // if (isMounted) setMessages(data || []);
+
+        const conversation = await getConversationMessages(
+          currentUserId,
+          receiverIdStr
+        );
+        if (isMounted) setMessages(conversation);
+      } catch (err) {
+        console.error("Error fetching messages:", err);
+        if (isMounted) setError("Failed to load messages");
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    const setupRealtimeSubscription = () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+      }
+
+      const channel = supabase
+        .channel(`chat_${currentUserId}_${receiverIdStr}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "messages",
+            // filter: `or(and(sender_id.eq.${currentUserId},receiver_id.eq.${receiverIdStr}),and(sender_id.eq.${receiverIdStr},receiver_id.eq.${currentUserId})`,
+            filter: `or(and(sender_id.eq.${currentUserId},receiver_id.eq.${receiverIdStr}),and(sender_id.eq.${receiverIdStr},receiver_id.eq.${currentUserId}))`,
+          },
+          (payload) => {
+            if (isMounted && payload.eventType === "INSERT") {
+              setMessages((prev) => [...prev, payload.new as Message]);
+              setTimeout(() => {
+                flatListRef.current?.scrollToEnd({ animated: true });
+              }, 100);
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe((status, err) => {
+          if (err) {
+            console.error("Subscription error:", err);
+          }
+          console.log("Channel status:", status);
+        });
+
+      channelRef.current = channel;
+      return channel;
+    };
+
+    fetchMessages();
+    markAsRead();
+    const channel = setupRealtimeSubscription();
 
     return () => {
-      supabase.removeChannel(subscription);
+      isMounted = false;
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [currentUserId, receiverIdStr]);
+
+  const handleCreateBooking = async () => {
+    if (!bookingTitle.trim() || !currentUserId || !receiverIdStr) return;
+
+    try {
+      await createBooking(
+        currentUserId,
+        receiverIdStr,
+        bookingTitle.trim(),
+        selectedDate.toISOString()
+      );
+
+      const bookingMessage = `I've scheduled a booking: ${bookingTitle} on ${selectedDate.toLocaleDateString()} at ${selectedDate.toLocaleTimeString(
+        [],
+        { hour: "2-digit", minute: "2-digit" }
+      )}`;
+      setNewMessage(bookingMessage);
+      handleSendMessage();
+
+      setShowBookingModal(false);
+      setBookingTitle("");
+    } catch (err) {
+      console.error("Error creating booking:", err);
+      setError("Failed to create booking");
+    }
+  };
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !currentUserId || !receiverIdStr) return;
@@ -153,18 +245,29 @@ export default function ChatScreen() {
       is_read: false,
     };
 
-    // Optimistic update
     setMessages((prev) => [...prev, newMsg]);
     setNewMessage("");
 
-    try {
-      const { error } = await supabase.from("messages").insert({
-        sender_id: currentUserId,
-        receiver_id: receiverIdStr,
-        content: newMessage.trim(),
-      });
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 100);
 
-      if (error) throw error;
+    // try {
+    //   const { error } = await supabase.from("messages").insert({
+    //     sender_id: currentUserId,
+    //     receiver_id: receiverIdStr,
+    //     content: newMessage.trim(),
+    //   });
+
+    //   if (error) throw error;
+    // } catch (err) {
+    //   console.error("Error sending message:", err);
+    //   setMessages((prev) => prev.filter((m) => m.id !== tempId));
+    //   setError("Failed to send message");
+    // }
+
+    try {
+      await sendMessage(currentUserId, receiverIdStr, newMessage);
     } catch (err) {
       console.error("Error sending message:", err);
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
@@ -186,6 +289,9 @@ export default function ChatScreen() {
         >
           {item.content}
         </Text>
+        {item.safety_analysis && (
+          <Text style={styles.safetyIndicator}>⚠️ Moderated</Text>
+        )}
         <Text style={styles.messageTime}>
           {new Date(item.created_at).toLocaleTimeString([], {
             hour: "2-digit",
@@ -195,6 +301,105 @@ export default function ChatScreen() {
       </View>
     );
   };
+
+  const renderHeaderRight = () => (
+    <Pressable
+      style={styles.bookButton}
+      onPress={() => setShowBookingModal(true)}
+    >
+      <Ionicons name="calendar" size={24} color="#A6192E" />
+    </Pressable>
+  );
+
+  const renderBookingModal = () => (
+    <Modal
+      visible={showBookingModal}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={() => setShowBookingModal(false)}
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Schedule a Booking</Text>
+
+          <TextInput
+            style={styles.modalInput}
+            placeholder="Booking title"
+            value={bookingTitle}
+            onChangeText={setBookingTitle}
+            placeholderTextColor="#999"
+          />
+
+          <View style={styles.datetimeContainer}>
+            <TouchableOpacity
+              style={styles.datetimeButton}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Ionicons name="calendar-outline" size={20} color="#A6192E" />
+              <Text style={styles.datetimeText}>
+                {selectedDate.toLocaleDateString()}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.datetimeButton}
+              onPress={() => setShowTimePicker(true)}
+            >
+              <Ionicons name="time-outline" size={20} color="#A6192E" />
+              <Text style={styles.datetimeText}>
+                {selectedDate.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {showDatePicker && (
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display="default"
+              minimumDate={new Date()}
+              onChange={(event, date) => {
+                setShowDatePicker(false);
+                if (date) setSelectedDate(date);
+              }}
+            />
+          )}
+
+          {showTimePicker && (
+            <DateTimePicker
+              value={selectedDate}
+              mode="time"
+              display="default"
+              onChange={(event, date) => {
+                setShowTimePicker(false);
+                if (date) setSelectedDate(date);
+              }}
+            />
+          )}
+
+          <View style={styles.modalButtonContainer}>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.cancelButton]}
+              onPress={() => setShowBookingModal(false)}
+            >
+              <Text style={styles.modalButtonText}>Cancel</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.modalButton, styles.confirmButton]}
+              onPress={handleCreateBooking}
+              disabled={!bookingTitle.trim()}
+            >
+              <Text style={styles.modalButtonText}>Confirm</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
 
   if (loading) {
     return (
@@ -236,7 +441,6 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header with back button and recipient name */}
       <View style={styles.header}>
         <Pressable
           style={styles.backButton}
@@ -245,14 +449,19 @@ export default function ChatScreen() {
           <Ionicons name="arrow-back" size={24} color="#A6192E" />
         </Pressable>
         <Text style={styles.headerTitle}>{recipient?.full_name || "Chat"}</Text>
-        <View style={{ width: 24 }} />
+        {recipient && renderHeaderRight()}
       </View>
 
       <FlatList
+        ref={flatListRef}
         data={messages}
         renderItem={renderMessage}
         keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.messagesList}
+        onContentSizeChange={() =>
+          flatListRef.current?.scrollToEnd({ animated: true })
+        }
+        onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
       />
 
       <KeyboardAvoidingView
@@ -278,6 +487,8 @@ export default function ChatScreen() {
           <Text style={styles.sendButtonText}>Send</Text>
         </TouchableOpacity>
       </KeyboardAvoidingView>
+
+      {renderBookingModal()}
     </SafeAreaView>
   );
 }
@@ -297,6 +508,9 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
   },
   backButton: {
+    padding: 4,
+  },
+  bookButton: {
     padding: 4,
   },
   headerTitle: {
@@ -333,7 +547,9 @@ const styles = StyleSheet.create({
   },
   messagesList: {
     padding: 10,
-    paddingBottom: 80,
+    paddingBottom: 30,
+    flexGrow: 1,
+    justifyContent: "flex-end",
   },
   messageContainer: {
     maxWidth: "80%",
@@ -364,6 +580,11 @@ const styles = StyleSheet.create({
     color: "#DDD",
     marginTop: 4,
     textAlign: "right",
+  },
+  safetyIndicator: {
+    fontSize: 10,
+    color: "#FFD700",
+    marginTop: 2,
   },
   inputContainer: {
     flexDirection: "row",
@@ -400,5 +621,73 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontWeight: "bold",
     fontSize: 16,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  modalContent: {
+    width: "80%",
+    backgroundColor: "white",
+    borderRadius: 10,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 20,
+    textAlign: "center",
+    color: "#333",
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: "#DDD",
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 15,
+    color: "#333",
+  },
+  datetimeContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 15,
+  },
+  datetimeButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#DDD",
+    borderRadius: 5,
+    padding: 12,
+    marginHorizontal: 5,
+  },
+  datetimeText: {
+    marginLeft: 8,
+    color: "#333",
+  },
+  modalButtonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  modalButton: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 5,
+    alignItems: "center",
+    marginHorizontal: 5,
+    marginVertical: 5,
+  },
+  cancelButton: {
+    backgroundColor: "#E5E5EA",
+  },
+  confirmButton: {
+    backgroundColor: "#A6192E",
+  },
+  modalButtonText: {
+    color: "white",
+    fontWeight: "bold",
   },
 });
