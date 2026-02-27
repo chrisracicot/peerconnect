@@ -126,7 +126,7 @@ export default function MessageListScreen() {
   }, []);
 
   const handleNavigateToChat = (partnerId: string) => {
-    router.push(`../(tabs)/messages/${partnerId}`);
+    router.push(`/(tabs)/messages/${partnerId}`);
   };
 
   if (loading) {

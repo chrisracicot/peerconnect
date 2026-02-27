@@ -26,12 +26,11 @@ const validationSchema = Yup.object().shape({
   password: Yup.string()
     .required("Password is required")
     .min(8, "Must be at least 8 characters"),
-  staySignedIn: Yup.boolean(),
 });
 
 const LoginScreen = () => {
   const router = useRouter();
-  const { user, signIn } = useAuth();
+  const { signIn } = useAuth();
   const [submitError, setSubmitError] = useState("");
   const [initialEmail, setInitialEmail] = useState("");
   const [rememberMePref, setRememberMePref] = useState(false);
@@ -51,7 +50,6 @@ const LoginScreen = () => {
     loadRememberedEmail();
   }, []);
 
-  // Custom wrapper to only dismiss keyboard on native mobile platforms
   const DismissKeyboard = ({ children }: { children: React.ReactNode }) => {
     if (Platform.OS === 'web') return <>{children}</>;
     return (
@@ -77,7 +75,7 @@ const LoginScreen = () => {
           <Text style={styles.title2}>Learn Together, Grow Together</Text>
 
           <Formik
-            enableReinitialize // Important to pre-fill from state
+            enableReinitialize
             initialValues={{
               email: initialEmail,
               password: "",
@@ -110,12 +108,10 @@ const LoginScreen = () => {
                 return;
               }
 
-              // Register for push notifications once logged in
               if (signedInUser) {
                 registerForPushNotificationsAsync(signedInUser.id).catch(console.error);
               }
 
-              // Handle Remember Me persistence
               if (values.rememberMe) {
                 await AsyncStorage.setItem("rememberedEmail", values.email);
               } else {
@@ -123,9 +119,9 @@ const LoginScreen = () => {
               }
 
               if (values.email.toLowerCase() === "admin@peerconnect.com") {
-                router.push("/admin" as any);
+                router.replace("/admin");
               } else {
-                router.push("/(tabs)/browse" as any);
+                router.replace("/(tabs)/browse");
               }
 
               setSubmitting(false);
@@ -155,7 +151,6 @@ const LoginScreen = () => {
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoComplete="email"
-                  textContentType="emailAddress"
                 />
                 {touched.email && errors.email && (
                   <Text style={styles.errorText}>{errors.email}</Text>
@@ -173,7 +168,6 @@ const LoginScreen = () => {
                   onBlur={handleBlur("password")}
                   value={values.password}
                   autoComplete="password"
-                  textContentType="password"
                 />
                 {touched.password && errors.password && (
                   <Text style={styles.errorText}>{errors.password}</Text>
@@ -183,7 +177,6 @@ const LoginScreen = () => {
                   <Text style={styles.errorText}>{submitError}</Text>
                 )}
 
-                {/* Resend email confirmation link */}
                 {submitError.includes("confirm your email") && (
                   <TouchableOpacity
                     onPress={async () => {
@@ -213,7 +206,7 @@ const LoginScreen = () => {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={() => router.push("./signup" as any)}
+                  onPress={() => router.push("/(auth)/signup")}
                   style={{ marginTop: 5, marginBottom: 10 }}
                 >
                   <Text style={styles.link}>Go to Signup</Text>
@@ -240,8 +233,7 @@ const LoginScreen = () => {
                   <Text style={styles.checkboxLabel}>Remember me</Text>
                 </View>
               </>
-            )
-            }
+            )}
           </Formik>
         </View>
       </DismissKeyboard>

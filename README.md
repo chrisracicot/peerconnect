@@ -66,11 +66,13 @@ You will also need a **Supabase project** to handle PostgreSQL, Auth, and Storag
 
 ## Project Structure
 
-- `/app`: Contains all screens and routing structure for Expo Router, divided mostly between `(tabs)` and standalone screens.
-- `/components`: Reusable UI components (e.g., `Header`, `RequestCard`, etc.).
-- `/constants`: Global constants like theme colors and layout definitions.
-- `/context`: React Context providers (Auth, Form/Data).
-- `/lib`: Helper services and configuration (e.g., Supabase client setup, API services).
+- `/app`: File-based routing with Expo Router.
+  - `/(auth)`: Secure authentication group (Login, Signup).
+  - `/(tabs)`: Protected main application features (Browse, Messages, Ask, Profile).
+  - `_layout.tsx`: Central `AppNavigator` gate with session-guarded redirection.
+- `/components`: Premium modular UI components (Glassmorphism, Shared Header).
+- `/context`: Global state management (Authentication, Form Data).
+- `/lib`: Supabase client and service layer for Database, Auth, and Notifications.
 - `schema.sql` / `seed.sql`: Database definitions for the Supabase backend.
 
 ## Authors & License

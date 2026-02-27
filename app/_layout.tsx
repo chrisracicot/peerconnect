@@ -1,19 +1,25 @@
 // app/_layout.tsx
-import { Stack, useRouter, useSegments, useRootNavigationState } from "expo-router";
+import { useEffect } from "react";
+import { View, ActivityIndicator } from "react-native";
+import {
+  Stack,
+  useRouter,
+  useSegments,
+  useRootNavigationState,
+} from "expo-router";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect, useState } from "react";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-//import "react-native-reanimated";
 import { FormDataProvider } from "@context/FormContext";
 import { AuthProvider, useAuth } from "context/AuthContext";
-import { View, StyleSheet, Platform, ActivityIndicator } from "react-native";
 
 SplashScreen.preventAutoHideAsync();
 
 export { ErrorBoundary } from "expo-router";
 
-
+export const unstable_settings = {
+  initialRouteName: "(auth)",
+};
 
 function AppNavigator() {
   const { user, loading } = useAuth();
@@ -26,15 +32,15 @@ function AppNavigator() {
 
     const inAuthGroup = segments[0] === "(auth)";
 
-    // If unauthenticated and NOT inside the (auth) group, force them there
     if (!user && !inAuthGroup) {
-      router.replace("/(auth)" as any);
+      router.replace("/(auth)");
+      return;
     }
-    // If authenticated and trying to hit the (auth) group, force them inside the app
-    else if (user && inAuthGroup) {
-      router.replace("/(tabs)/browse" as any);
+
+    if (user && inAuthGroup) {
+      router.replace("/(tabs)/browse");
     }
-  }, [user, segments, loading, rootNavigationState?.key]);
+  }, [user, loading, segments, rootNavigationState?.key, router]);
 
   if (loading || !rootNavigationState?.key) {
     return (
@@ -46,8 +52,8 @@ function AppNavigator() {
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="(auth)" />
+      <Stack.Screen name="(tabs)" />
     </Stack>
   );
 }
@@ -63,38 +69,16 @@ export default function RootLayout() {
   }, [error]);
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
+    if (loaded) SplashScreen.hideAsync();
   }, [loaded]);
 
-  if (!loaded) {
-    return null;
-  }
+  if (!loaded) return null;
 
   return (
     <AuthProvider>
       <FormDataProvider>
-        <View style={styles.appContainer}>
-          <AppNavigator />
-        </View>
+        <AppNavigator />
       </FormDataProvider>
     </AuthProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  appContainer: {
-    flex: 1,
-    maxWidth: Platform.OS === "web" ? 800 : "100%",
-    width: "100%",
-    marginHorizontal: "auto",
-    backgroundColor: "#fff",
-    // Standard shadows for cross-platform support where possible
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-});

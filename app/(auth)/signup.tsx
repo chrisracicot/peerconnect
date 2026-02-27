@@ -11,7 +11,7 @@ import {
   Keyboard,
 } from "react-native";
 import Checkbox from "expo-checkbox";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import * as Yup from "yup";
 import { Formik } from "formik";
@@ -30,10 +30,22 @@ const validationSchema = Yup.object().shape({
 
 export default function Signup() {
   const [submitError, setSubmitError] = useState("");
+  const [submitMessage, setSubmitMessage] = useState("");
   const router = useRouter();
   const { signUp } = useAuth();
 
-  // Custom wrapper to only dismiss keyboard on native mobile platforms
+  useEffect(() => {
+    let t: any;
+    if (submitMessage) {
+      t = setTimeout(() => {
+        router.replace("/(auth)");
+      }, 2000);
+    }
+    return () => {
+      if (t) clearTimeout(t);
+    };
+  }, [submitMessage, router]);
+
   const DismissKeyboard = ({ children }: { children: React.ReactNode }) => {
     if (Platform.OS === 'web') return <>{children}</>;
     return (
@@ -61,6 +73,7 @@ export default function Signup() {
             validationSchema={validationSchema}
             onSubmit={async (values, { setSubmitting }) => {
               setSubmitError("");
+              setSubmitMessage("");
 
               const { error } = await signUp(values.email, values.password);
 
@@ -70,11 +83,7 @@ export default function Signup() {
                 return;
               }
 
-              setSubmitError(
-                "Account created! Please check your email to verify."
-              );
-              router.replace("/(auth)");
-
+              setSubmitMessage("Account created! Please check your email to verify.");
               setSubmitting(false);
             }}
           >
@@ -124,7 +133,6 @@ export default function Signup() {
                   <Text style={styles.errorText}>{errors.password}</Text>
                 )}
 
-                {/* Agree to privacy policy */}
                 <View style={styles.checker}>
                   <Checkbox
                     value={values.agreeToPolicy}
@@ -148,20 +156,12 @@ export default function Signup() {
                   <Text style={styles.errorText}>{errors.agreeToPolicy}</Text>
                 )}
 
-                {/* Auto login */}
-                {/* <View style={styles.checker}>
-                  <Checkbox
-                    value={values.autoLogin}
-                    onValueChange={() =>
-                      setFieldValue("autoLogin", !values.autoLogin)
-                    }
-                    style={styles.checkbox}
-                  />
-                  <Text style={styles.checkboxLabel}>Sign me in after</Text>
-                </View> */}
-
                 {submitError && (
                   <Text style={styles.errorText}>{submitError}</Text>
+                )}
+
+                {submitMessage && (
+                  <Text style={styles.successText}>{submitMessage}</Text>
                 )}
 
                 <TouchableOpacity
@@ -180,7 +180,7 @@ export default function Signup() {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={() => router.replace("/(auth)" as any)}
+                  onPress={() => router.replace("/(auth)")}
                   style={{ marginTop: 10 }}
                 >
                   <Text style={styles.link}>
@@ -194,7 +194,7 @@ export default function Signup() {
       </DismissKeyboard>
     </KeyboardAvoidingView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -229,6 +229,12 @@ const styles = StyleSheet.create({
     color: "red",
     fontSize: 12,
     marginBottom: 10,
+  },
+  successText: {
+    color: "green",
+    fontSize: 12,
+    marginBottom: 10,
+    textAlign: "center",
   },
   checker: {
     flexDirection: "row",

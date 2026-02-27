@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { Session, User } from "@supabase/supabase-js";
+import { Session } from "@supabase/supabase-js";
 import { supabase } from "@lib/supabase";
 import { useRouter } from "expo-router";
 import type { AuthContextType } from "@models/auth";
@@ -41,9 +41,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        emailRedirectTo: `${process.env.EXPO_PUBLIC_WEB_URL}/auth/verify`,
-      },
     });
 
     if (error) {
@@ -59,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error };
     }
 
-    router.replace("/(auth)" as any);
+    router.replace("/(auth)");
     return { error: null };
   };
 
