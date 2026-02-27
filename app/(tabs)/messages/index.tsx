@@ -33,7 +33,7 @@ export default function MessageListScreen() {
 
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
-        router.push("/");
+        router.replace("/(auth)" as any);
         return;
       }
 

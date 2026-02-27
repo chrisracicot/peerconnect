@@ -32,7 +32,10 @@ export default function Header({
       <View style={styles.headerIcons}>
         <TouchableOpacity
           style={styles.iconButton}
-          onPress={onNotificationPress}
+          onPress={() => {
+            if (onNotificationPress) onNotificationPress();
+            router.push("/notifications");
+          }}
         >
           <Icon name="bell" color="#1f1f1f" />
           {unreadCount > 0 && <View style={styles.unreadDot} />}

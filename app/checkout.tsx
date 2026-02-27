@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ActivityIndicat
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { createBooking } from "@lib/services/bookService";
+import { sendMessage } from "@lib/services/messagesService";
 import { useAuth } from "../context/AuthContext";
 
 export default function CheckoutScreen() {
@@ -50,6 +51,9 @@ export default function CheckoutScreen() {
             // Now we specifically override its status to escrow using our newly added SQL column
             // Note: The previous bookService createBooking was hardcoded to `payment_status: "pending"`.
             // We'll trust our backend logic for this mock demo. Wait, let's just update it fully:
+
+            // Send confirmation message back to the provider
+            await sendMessage(user.id, providerId as string, `✅ *Payment Confirmed!* I have successfully paid to lock in our session: ${title} on ${new Date(date as string).toLocaleString()}. Funds are held securely in Escrow.`);
 
             Alert.alert(
                 "Payment Successful",

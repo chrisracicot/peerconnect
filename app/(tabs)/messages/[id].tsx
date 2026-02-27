@@ -77,7 +77,7 @@ export default function ChatScreen() {
           error: authError,
         } = await supabase.auth.getUser();
         if (authError || !user) {
-          router.push("/");
+          router.replace("/(auth)" as any);
           return;
         }
         setCurrentUserId(user.id);

@@ -4,7 +4,7 @@ import {
     Text,
     StyleSheet,
     TextInput,
-    FlatList,
+    ScrollView,
     TouchableOpacity,
     Image,
     SafeAreaView,
@@ -82,31 +82,9 @@ const ProfileScreen = () => {
             .then(setAvailability)
             .catch((err) => console.error(err));
 
-        // Fetch Bookings & Auto-Check 3 week escrow limit
+        // Fetch Bookings
         getBookingsForUser(user.id)
-            .then(async (data) => {
-                const now = new Date();
-                let updatedStats = false;
-                const freshBookings = [...data];
-
-                for (let i = 0; i < freshBookings.length; i++) {
-                    const b = freshBookings[i];
-                    if (b.payment_status === "escrow") {
-                        const sessionDate = new Date(b.date);
-                        const daysDiff = (now.getTime() - sessionDate.getTime()) / (1000 * 3600 * 24);
-                        if (daysDiff >= 21) { // 3 weeks auto-release
-                            try {
-                                await updateBookingEscrow(b.id, "released");
-                                freshBookings[i].payment_status = "released";
-                                updatedStats = true;
-                            } catch (e) {
-                                console.warn("Failed auto release", e);
-                            }
-                        }
-                    }
-                }
-                setBookings(freshBookings);
-            })
+            .then(setBookings)
             .catch((err) => console.error(err))
             .finally(() => setLoadingBookings(false));
 
@@ -162,320 +140,310 @@ const ProfileScreen = () => {
     return (
         <SafeAreaView style={styles.container}>
             <Header />
-            {/* Header */}
-            <View style={styles.header}>
-                <Text style={styles.heading}>Profile</Text>
-                <TouchableOpacity onPress={handleEdit}>
-                    <Icon name={editMode ? "check" : "pencil"} color="#0066CC" />
-                </TouchableOpacity>
-            </View>
-
-            {/* Avatar */}
-            <View style={styles.avatarContainer}>
-                {profile?.avatar_url ? (
-                    <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
-                ) : (
-                    <Image
-                        source={require("../../assets/images/avatar.png")}
-                        style={styles.avatar}
-                    />
-                )}
-                <Text style={styles.name}>
-                    {loadingProfile ? "Loading..." : profile?.full_name ?? user?.email}
-                </Text>
-                {rating && rating.count > 0 && (
-                    <View style={{ flexDirection: "row", alignItems: "center", marginTop: 5 }}>
-                        <FontAwesome name="star" color="#FFD700" size={16} />
-                        <Text style={{ marginLeft: 5, fontSize: 16, fontWeight: "bold" }}>
-                            {rating.average.toFixed(1)}
-                        </Text>
-                        <Text style={{ marginLeft: 5, color: "#666" }}>
-                            ({rating.count} {rating.count === 1 ? 'review' : 'reviews'})
-                        </Text>
-                    </View>
-                )}
-                {profile?.verified && (
-                    <Text style={{ color: "green" }}>✔ Verified</Text>
-                )}
-                <Text style={styles.studentId}>{user?.id.slice(0, 8)}</Text>
-            </View>
-
-            {/* Bio section */}
-            {editMode && (
-                <View style={styles.editFields}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Full Name"
-                        value={profile?.full_name ?? ""}
-                        onChangeText={(text) =>
-                            setProfile((prev) => prev && { ...prev, full_name: text })
-                        }
-                    />
-
-                    {/* Avatar Upload Placeholder */}
-                    <TouchableOpacity
-                        onPress={async () => {
-                            try {
-                                const result = await ImagePicker.launchImageLibraryAsync({
-                                    mediaTypes: ['images'],
-                                    allowsEditing: true,
-                                    aspect: [1, 1],
-                                    quality: 0.5,
-                                    base64: true,
-                                });
-
-                                if (!result.canceled && result.assets[0].base64 && user) {
-                                    setUploadingImage(true);
-                                    // Upload to Supabase Storage
-                                    const filePath = `${user.id}/${new Date().getTime()}.jpg`;
-                                    const publicUrl = await uploadBase64Image(
-                                        "avatars",
-                                        filePath,
-                                        result.assets[0].base64,
-                                        "image/jpeg"
-                                    );
-                                    // Optimistically update the local state so the user sees it immediately
-                                    setProfile((prev) => prev && { ...prev, avatar_url: publicUrl });
-                                    setUploadingImage(false);
-                                }
-                            } catch (error) {
-                                console.error("Image pick error:", error);
-                                Alert.alert("Error", "Could not upload image.");
-                                setUploadingImage(false);
-                            }
-                        }}
-                        style={styles.avatarEditButton}
-                        disabled={uploadingImage}
-                    >
-                        <Text style={{ color: "#0066CC", fontWeight: "bold" }}>
-                            {uploadingImage ? "Uploading..." : "Change Avatar"}
-                        </Text>
+            <ScrollView contentContainerStyle={{ paddingBottom: 50 }}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <Text style={styles.heading}>Profile</Text>
+                    <TouchableOpacity onPress={handleEdit}>
+                        <Icon name={editMode ? "check" : "pencil"} color="#0066CC" />
                     </TouchableOpacity>
-
-                    {/* Manage Availability */}
-                    <View style={{ marginTop: 20 }}>
-                        <Text style={styles.sectionTitle}>Manage Availability</Text>
-                        {availability.map(slot => (
-                            <View key={slot.id} style={{ flexDirection: "row", justifyContent: "space-between", padding: 10, backgroundColor: "#f9f9f9", marginBottom: 5, borderRadius: 5 }}>
-                                <Text>{slot.day_of_week}:   {slot.start_time} - {slot.end_time}</Text>
-                                <TouchableOpacity onPress={() => handleDeleteSlot(slot.id)}>
-                                    <FontAwesome name="trash" color="#FF6B6B" size={18} />
-                                </TouchableOpacity>
-                            </View>
-                        ))}
-                        <View style={{ flexDirection: "row", marginTop: 10, gap: 5 }}>
-                            <TextInput
-                                style={[styles.input, { flex: 2, marginBottom: 0 }]}
-                                placeholder="Day (e.g. Monday)"
-                                value={newDay}
-                                onChangeText={setNewDay}
-                            />
-                            <TextInput
-                                style={[styles.input, { flex: 1.5, marginBottom: 0 }]}
-                                placeholder="Start (9 AM)"
-                                value={newStart}
-                                onChangeText={setNewStart}
-                            />
-                            <TextInput
-                                style={[styles.input, { flex: 1.5, marginBottom: 0 }]}
-                                placeholder="End (5 PM)"
-                                value={newEnd}
-                                onChangeText={setNewEnd}
-                            />
-                        </View>
-                        <TouchableOpacity style={styles.avatarEditButton} onPress={handleAddSlot}>
-                            <Text style={{ color: "#0066CC", fontWeight: "bold" }}>+ Add Slot</Text>
-                        </TouchableOpacity>
-                    </View>
                 </View>
-            )}
 
-            {/* Availability */}
-            <View style={styles.sectionContainer}>
-                <Text style={styles.sectionTitle}>Tutor Availability</Text>
-                <FlatList
-                    data={availability}
-                    renderItem={({ item }) => (
-                        <View style={styles.scheduleItem}>
-                            <Text style={styles.scheduleCourse}>{item.day_of_week}</Text>
-                            <Text style={styles.scheduleDetails}>
-                                {item.start_time} to {item.end_time}
+                {/* Avatar */}
+                <View style={styles.avatarContainer}>
+                    {profile?.avatar_url ? (
+                        <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
+                    ) : (
+                        <Image
+                            source={require("../../assets/images/avatar.png")}
+                            style={styles.avatar}
+                        />
+                    )}
+                    <Text style={styles.name}>
+                        {loadingProfile ? "Loading..." : profile?.full_name ?? user?.email}
+                    </Text>
+                    {rating && rating.count > 0 && (
+                        <View style={{ flexDirection: "row", alignItems: "center", marginTop: 5 }}>
+                            <FontAwesome name="star" color="#FFD700" size={16} />
+                            <Text style={{ marginLeft: 5, fontSize: 16, fontWeight: "bold" }}>
+                                {rating.average.toFixed(1)}
+                            </Text>
+                            <Text style={{ marginLeft: 5, color: "#666" }}>
+                                ({rating.count} {rating.count === 1 ? 'review' : 'reviews'})
                             </Text>
                         </View>
                     )}
-                    keyExtractor={(item) => item.id}
-                    ListEmptyComponent={<Text style={styles.emptyItalic}>No availability slots posted.</Text>}
-                />
-            </View>
-
-            {/* Booked Sessions / Escrow */}
-            <View style={styles.sectionContainer}>
-                <Text style={styles.sectionTitle}>Booked Sessions</Text>
-                <FlatList
-                    data={bookings}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    renderItem={({ item }) => {
-                        const isStudentA = item.requester_id === user?.id; // The one paying
-                        const sessionDate = new Date(item.date);
-                        const isPast = sessionDate < new Date();
-
-                        return (
-                            <View style={[styles.bookingCard, item.payment_status === "escrow" && styles.escrowCard]}>
-                                <View style={styles.bookingHeader}>
-                                    <View style={[styles.statusBadge, { backgroundColor: item.payment_status === "escrow" ? "#FFC107" : "#28a745" }]}>
-                                        <Text style={styles.statusText}>{item.payment_status.toUpperCase()}</Text>
-                                    </View>
-                                </View>
-                                <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
-                                <Text style={styles.scheduleDetails}>
-                                    {sessionDate.toLocaleDateString()}
-                                </Text>
-                                <Text style={styles.scheduleDetails}>
-                                    ${item.price} • {item.location}
-                                </Text>
-
-                                {isStudentA && item.payment_status === "escrow" && isPast && (
-                                    <TouchableOpacity
-                                        style={styles.releaseFundsBtn}
-                                        onPress={async () => {
-                                            try {
-                                                await updateBookingEscrow(item.id, "released");
-                                                setBookings(bookings.map(b => b.id === item.id ? { ...b, payment_status: "released" } : b));
-                                                Alert.alert("Funds Released", "The escrow finds have been successfully released to the tutor.");
-                                            } catch (e) {
-                                                Alert.alert("Error", "Could not release funds.");
-                                            }
-                                        }}
-                                    >
-                                        <Text style={styles.releaseFundsText}>Release Funds</Text>
-                                    </TouchableOpacity>
-                                )}
-
-                                {isStudentA && (item.payment_status === "released" || item.status === "completed") && (
-                                    <TouchableOpacity
-                                        style={[styles.releaseFundsBtn, { backgroundColor: "#FFD700" }]}
-                                        onPress={() => {
-                                            setSelectedBookingId(item.id);
-                                            setSelectedRevieweeId(item.provider_id);
-                                            setReviewModalVisible(true);
-                                        }}
-                                    >
-                                        <Text style={[styles.releaseFundsText, { color: "#333" }]}>Leave Review</Text>
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-                        );
-                    }}
-                    keyExtractor={(item) => item.id.toString()}
-                    ListEmptyComponent={
-                        !loadingBookings ? (
-                            <Text style={styles.emptyItalic}>No sessions booked yet.</Text>
-                        ) : null
-                    }
-                />
-            </View>
-
-            {/* Posted Requests */}
-            <View style={styles.sectionContainer}>
-                <Text style={styles.sectionTitle}>Posted Requests</Text>
-                <FlatList
-                    data={postedRequests.filter((req) => req.user_id === user?.id)}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity
-                            style={styles.requestCard}
-                            onPress={() => router.push({
-                                pathname: `/(request)/[id]` as any,
-                                params: { id: item.request_id }
-                            })}
-                        >
-                            <View style={styles.cardHeader}>
-                                <Text style={styles.title}>{item.title}</Text>
-                                <TouchableOpacity
-                                    onPress={() => router.push({
-                                        pathname: `/(tabs)/messages/[id]` as any,
-                                        params: {
-                                            id: item.user_id,
-                                            initialMessage: `Re: ${item.title}`
-                                        }
-                                    })}
-                                >
-                                    <Icon name="comment-o" color="#FF6B6B" />
-                                </TouchableOpacity>
-                            </View>
-                            <Text style={styles.description}>{item.description}</Text>
-                            <View style={styles.tagsContainer}>
-                                {item.tags?.map((tag: string) => (
-                                    <Text key={tag} style={styles.tag}>
-                                        {tag}
-                                    </Text>
-                                ))}
-                            </View>
-                        </TouchableOpacity>
+                    {profile?.verified && (
+                        <Text style={{ color: "green" }}>✔ Verified</Text>
                     )}
-                    keyExtractor={(item) => item.request_id.toString()}
-                    ListEmptyComponent={
-                        !loadingRequests
-                            ? () => (
-                                <Text
-                                    style={{
-                                        color: "#999",
-                                        fontStyle: "italic",
-                                        textAlign: "center",
-                                        marginTop: 10,
-                                    }}
-                                >
-                                    No requests posted yet.
+                    <Text style={styles.studentId}>{user?.id.slice(0, 8)}</Text>
+                </View>
+
+                {/* Bio section */}
+                {editMode && (
+                    <View style={styles.editFields}>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Full Name"
+                            value={profile?.full_name ?? ""}
+                            onChangeText={(text) =>
+                                setProfile((prev) => prev && { ...prev, full_name: text })
+                            }
+                        />
+
+                        {/* Avatar Upload Placeholder */}
+                        <TouchableOpacity
+                            onPress={async () => {
+                                try {
+                                    const result = await ImagePicker.launchImageLibraryAsync({
+                                        mediaTypes: ['images'],
+                                        allowsEditing: true,
+                                        aspect: [1, 1],
+                                        quality: 0.5,
+                                        base64: true,
+                                    });
+
+                                    if (!result.canceled && result.assets[0].base64 && user) {
+                                        setUploadingImage(true);
+                                        // Upload to Supabase Storage
+                                        const filePath = `${user.id}/${new Date().getTime()}.jpg`;
+                                        const publicUrl = await uploadBase64Image(
+                                            "avatars",
+                                            filePath,
+                                            result.assets[0].base64,
+                                            "image/jpeg"
+                                        );
+                                        // Optimistically update the local state so the user sees it immediately
+                                        setProfile((prev) => prev && { ...prev, avatar_url: publicUrl });
+                                        setUploadingImage(false);
+                                    }
+                                } catch (error) {
+                                    console.error("Image pick error:", error);
+                                    Alert.alert("Error", "Could not upload image.");
+                                    setUploadingImage(false);
+                                }
+                            }}
+                            style={styles.avatarEditButton}
+                            disabled={uploadingImage}
+                        >
+                            <Text style={{ color: "#0066CC", fontWeight: "bold" }}>
+                                {uploadingImage ? "Uploading..." : "Change Avatar"}
+                            </Text>
+                        </TouchableOpacity>
+
+                        {/* Manage Availability */}
+                        <View style={{ marginTop: 20 }}>
+                            <Text style={styles.sectionTitle}>Manage Availability</Text>
+                            {availability.map(slot => (
+                                <View key={slot.id} style={{ flexDirection: "row", justifyContent: "space-between", padding: 10, backgroundColor: "#f9f9f9", marginBottom: 5, borderRadius: 5 }}>
+                                    <Text>{slot.day_of_week}:   {slot.start_time} - {slot.end_time}</Text>
+                                    <TouchableOpacity onPress={() => handleDeleteSlot(slot.id)}>
+                                        <FontAwesome name="trash" color="#FF6B6B" size={18} />
+                                    </TouchableOpacity>
+                                </View>
+                            ))}
+                            <View style={{ flexDirection: "row", marginTop: 10, gap: 5 }}>
+                                <TextInput
+                                    style={[styles.input, { flex: 2, marginBottom: 0 }]}
+                                    placeholder="Day (e.g. Monday)"
+                                    value={newDay}
+                                    onChangeText={setNewDay}
+                                />
+                                <TextInput
+                                    style={[styles.input, { flex: 1.5, marginBottom: 0 }]}
+                                    placeholder="Start (9 AM)"
+                                    value={newStart}
+                                    onChangeText={setNewStart}
+                                />
+                                <TextInput
+                                    style={[styles.input, { flex: 1.5, marginBottom: 0 }]}
+                                    placeholder="End (5 PM)"
+                                    value={newEnd}
+                                    onChangeText={setNewEnd}
+                                />
+                            </View>
+                            <TouchableOpacity style={styles.avatarEditButton} onPress={handleAddSlot}>
+                                <Text style={{ color: "#0066CC", fontWeight: "bold" }}>+ Add Slot</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
+
+                {/* Availability */}
+                <View style={styles.sectionContainer}>
+                    <Text style={styles.sectionTitle}>Tutor Availability</Text>
+                    {availability.length > 0 ? (
+                        availability.map((item) => (
+                            <View key={item.id} style={styles.scheduleItem}>
+                                <Text style={styles.scheduleCourse}>{item.day_of_week}</Text>
+                                <Text style={styles.scheduleDetails}>
+                                    {item.start_time} to {item.end_time}
                                 </Text>
-                            )
-                            : null
-                    }
-                />
-            </View>
+                            </View>
+                        ))
+                    ) : (
+                        <Text style={styles.emptyItalic}>No availability slots posted.</Text>
+                    )}
+                </View>
 
-            {/* Temporary Logout */}
-            <TouchableOpacity
-                style={{
-                    backgroundColor: "#FF6B6B",
-                    padding: 15,
-                    margin: 20,
-                    borderRadius: 8,
-                    alignItems: "center",
-                }}
-                onPress={async () => {
-                    await signOut();
-                    router.replace("/");
-                }}
-            >
-                <Text style={{ color: "#fff", fontWeight: "bold" }}>Log Out</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-                onPress={handleDelete}
-                style={{
-                    padding: 15,
-                    backgroundColor: "#ccc",
-                    marginTop: 10,
-                    margin: 20,
-                    borderRadius: 8,
-                    alignItems: "center",
-                }}
-            >
-                <Text style={{ color: "#333" }}>Delete Account (Provisional)</Text>
-            </TouchableOpacity>
+                {/* Booked Sessions / Escrow */}
+                <View style={styles.sectionContainer}>
+                    <Text style={styles.sectionTitle}>Booked Sessions</Text>
+                    {!loadingBookings && bookings.length === 0 ? (
+                        <Text style={styles.emptyItalic}>No sessions booked yet.</Text>
+                    ) : (
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                            {bookings.map((item) => {
+                                const isStudentA = item.requester_id === user?.id; // The one paying
+                                const sessionDate = new Date(item.date);
+                                const isPast = sessionDate < new Date();
 
-            {user && (
-                <ReviewModal
-                    visible={reviewModalVisible}
-                    bookingId={selectedBookingId}
-                    reviewerId={user.id}
-                    revieweeId={selectedRevieweeId}
-                    onClose={() => setReviewModalVisible(false)}
-                    onSuccess={() => {
-                        setReviewModalVisible(false);
-                        Alert.alert("Success", "Review submitted!");
+                                return (
+                                    <View key={item.id.toString()} style={[styles.bookingCard, item.payment_status === "escrow" && styles.escrowCard]}>
+                                        <View style={styles.bookingHeader}>
+                                            <View style={[styles.statusBadge, { backgroundColor: item.payment_status === "escrow" ? "#FFC107" : "#28a745" }]}>
+                                                <Text style={styles.statusText}>{item.payment_status.toUpperCase()}</Text>
+                                            </View>
+                                        </View>
+                                        <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
+                                        <Text style={styles.scheduleDetails}>
+                                            {sessionDate.toLocaleDateString()}
+                                        </Text>
+                                        <Text style={styles.scheduleDetails}>
+                                            ${item.price} • {item.location}
+                                        </Text>
+
+                                        {isStudentA && item.payment_status === "escrow" && isPast && (
+                                            <TouchableOpacity
+                                                style={styles.releaseFundsBtn}
+                                                onPress={async () => {
+                                                    try {
+                                                        await updateBookingEscrow(item.id, "released");
+                                                        setBookings(bookings.map(b => b.id === item.id ? { ...b, payment_status: "released" } : b));
+                                                        Alert.alert("Funds Released", "The escrow finds have been successfully released to the tutor.");
+                                                    } catch (e) {
+                                                        Alert.alert("Error", "Could not release funds.");
+                                                    }
+                                                }}
+                                            >
+                                                <Text style={styles.releaseFundsText}>Release Funds</Text>
+                                            </TouchableOpacity>
+                                        )}
+
+                                        {isStudentA && (item.payment_status === "released" || item.status === "completed") && (
+                                            <TouchableOpacity
+                                                style={[styles.releaseFundsBtn, { backgroundColor: "#FFD700" }]}
+                                                onPress={() => {
+                                                    setSelectedBookingId(item.id);
+                                                    setSelectedRevieweeId(item.provider_id);
+                                                    setReviewModalVisible(true);
+                                                }}
+                                            >
+                                                <Text style={[styles.releaseFundsText, { color: "#333" }]}>Leave Review</Text>
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
+                                );
+                            })}
+                        </ScrollView>
+                    )}
+                </View>
+
+                {/* Posted Requests */}
+                <View style={styles.sectionContainer}>
+                    <Text style={styles.sectionTitle}>Posted Requests</Text>
+                    {!loadingRequests && postedRequests.filter((req) => req.user_id === user?.id).length === 0 ? (
+                        <Text
+                            style={{
+                                color: "#999",
+                                fontStyle: "italic",
+                                textAlign: "center",
+                                marginTop: 10,
+                            }}
+                        >
+                            No requests posted yet.
+                        </Text>
+                    ) : (
+                        postedRequests.filter((req) => req.user_id === user?.id).map((item) => (
+                            <TouchableOpacity
+                                key={item.request_id.toString()}
+                                style={styles.requestCard}
+                                onPress={() => router.push({
+                                    pathname: `/(request)/[id]` as any,
+                                    params: { id: item.request_id }
+                                })}
+                            >
+                                <View style={styles.cardHeader}>
+                                    <Text style={styles.title}>{item.title}</Text>
+                                    <TouchableOpacity
+                                        onPress={() => router.push({
+                                            pathname: `/(tabs)/messages/[id]` as any,
+                                            params: {
+                                                id: item.user_id,
+                                                initialMessage: `Re: ${item.title}`
+                                            }
+                                        })}
+                                    >
+                                        <Icon name="comment-o" color="#FF6B6B" />
+                                    </TouchableOpacity>
+                                </View>
+                                <Text style={styles.description}>{item.description}</Text>
+                                <View style={styles.tagsContainer}>
+                                    {item.tags?.map((tag: string) => (
+                                        <Text key={tag} style={styles.tag}>
+                                            {tag}
+                                        </Text>
+                                    ))}
+                                </View>
+                            </TouchableOpacity>
+                        ))
+                    )}
+                </View>
+
+                {/* Temporary Logout */}
+                <TouchableOpacity
+                    style={{
+                        backgroundColor: "#FF6B6B",
+                        padding: 15,
+                        margin: 20,
+                        borderRadius: 8,
+                        alignItems: "center",
                     }}
-                />
-            )}
+                    onPress={async () => {
+                        await signOut();
+                        router.replace("/(auth)" as any);
+                    }}
+                >
+                    <Text style={{ color: "#fff", fontWeight: "bold" }}>Log Out</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={handleDelete}
+                    style={{
+                        padding: 15,
+                        backgroundColor: "#ccc",
+                        marginTop: 10,
+                        margin: 20,
+                        borderRadius: 8,
+                        alignItems: "center",
+                    }}
+                >
+                    <Text style={{ color: "#333" }}>Delete Account (Provisional)</Text>
+                </TouchableOpacity>
+
+                {user && (
+                    <ReviewModal
+                        visible={reviewModalVisible}
+                        bookingId={selectedBookingId}
+                        reviewerId={user.id}
+                        revieweeId={selectedRevieweeId}
+                        onClose={() => setReviewModalVisible(false)}
+                        onSuccess={() => {
+                            setReviewModalVisible(false);
+                            Alert.alert("Success", "Review submitted!");
+                        }}
+                    />
+                )}
+            </ScrollView>
         </SafeAreaView>
     );
 };
