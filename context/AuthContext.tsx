@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error };
     }
 
-    router.replace("/");
+    router.replace("/(auth)" as any);
     return { error: null };
   };
 

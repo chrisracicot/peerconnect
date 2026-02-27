@@ -12,11 +12,12 @@ import {
   Keyboard,
   ActivityIndicator,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Checkbox from "expo-checkbox";
 import { Formik } from "formik";
 import * as Yup from "yup";
 import { useRouter } from "expo-router";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../../lib/supabase";
 import { useAuth } from "context/AuthContext";
 import { registerForPushNotificationsAsync } from "@lib/services/notificationService";
 
@@ -30,8 +31,25 @@ const validationSchema = Yup.object().shape({
 
 const LoginScreen = () => {
   const router = useRouter();
-  const [submitError, setSubmitError] = useState("");
   const { user, signIn } = useAuth();
+  const [submitError, setSubmitError] = useState("");
+  const [initialEmail, setInitialEmail] = useState("");
+  const [rememberMePref, setRememberMePref] = useState(false);
+
+  useEffect(() => {
+    const loadRememberedEmail = async () => {
+      try {
+        const savedEmail = await AsyncStorage.getItem("rememberedEmail");
+        if (savedEmail) {
+          setInitialEmail(savedEmail);
+          setRememberMePref(true);
+        }
+      } catch (e) {
+        console.error("Failed to load remembered email", e);
+      }
+    };
+    loadRememberedEmail();
+  }, []);
 
   // Custom wrapper to only dismiss keyboard on native mobile platforms
   const DismissKeyboard = ({ children }: { children: React.ReactNode }) => {
@@ -51,7 +69,7 @@ const LoginScreen = () => {
       <DismissKeyboard>
         <View style={styles.container}>
           <Image
-            source={require("../assets/images/logo.png")}
+            source={require("../../assets/images/logo.png")}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -59,19 +77,16 @@ const LoginScreen = () => {
           <Text style={styles.title2}>Learn Together, Grow Together</Text>
 
           <Formik
+            enableReinitialize // Important to pre-fill from state
             initialValues={{
-              email: "",
+              email: initialEmail,
               password: "",
-              staySignedIn: false,
+              rememberMe: rememberMePref,
             }}
             validationSchema={validationSchema}
             onSubmit={async (values, { setSubmitting }) => {
               setSubmitError("");
 
-              // const { data, error } = await supabase.auth.signInWithPassword({
-              //   email: values.email,
-              //   password: values.password,
-              // });
               const { user: signedInUser, error } = await signIn(
                 values.email,
                 values.password
@@ -81,9 +96,7 @@ const LoginScreen = () => {
                 if (error.message.includes("Invalid login credentials")) {
                   setSubmitError("Invalid email or password.");
                 } else if (error.message.includes("Email not confirmed")) {
-                  setSubmitError(
-                    "Please confirm your email before logging in."
-                  );
+                  setSubmitError("Please confirm your email before logging in.");
                 } else {
                   setSubmitError("Login failed. Please try again.");
                 }
@@ -91,8 +104,6 @@ const LoginScreen = () => {
                 return;
               }
 
-              //const user = data?.user;
-              //if (user && !user.email_confirmed_at) {
               if (signedInUser && !signedInUser.email_confirmed_at) {
                 setSubmitError("Email not confirmed. Check your inbox.");
                 setSubmitting(false);
@@ -104,10 +115,17 @@ const LoginScreen = () => {
                 registerForPushNotificationsAsync(signedInUser.id).catch(console.error);
               }
 
+              // Handle Remember Me persistence
+              if (values.rememberMe) {
+                await AsyncStorage.setItem("rememberedEmail", values.email);
+              } else {
+                await AsyncStorage.removeItem("rememberedEmail");
+              }
+
               if (values.email.toLowerCase() === "admin@peerconnect.com") {
                 router.push("/admin" as any);
               } else {
-                router.push("./browse");
+                router.push("/(tabs)/browse" as any);
               }
 
               setSubmitting(false);
@@ -195,7 +213,7 @@ const LoginScreen = () => {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  onPress={() => router.push("./screens/signup")}
+                  onPress={() => router.push("./signup" as any)}
                   style={{ marginTop: 5, marginBottom: 10 }}
                 >
                   <Text style={styles.link}>Go to Signup</Text>
@@ -204,7 +222,7 @@ const LoginScreen = () => {
                 <TouchableOpacity
                   onPress={() => {
                     setFieldValue("email", "admin@peerconnect.com");
-                    setFieldValue("password", "admin123");
+                    setFieldValue("password", "password123");
                   }}
                   style={{ marginBottom: 15 }}
                 >
@@ -213,16 +231,17 @@ const LoginScreen = () => {
 
                 <View style={styles.checker}>
                   <Checkbox
-                    value={values.staySignedIn}
+                    value={values.rememberMe}
                     onValueChange={() =>
-                      setFieldValue("staySignedIn", !values.staySignedIn)
+                      setFieldValue("rememberMe", !values.rememberMe)
                     }
                     style={styles.checkbox}
                   />
-                  <Text style={styles.checkboxLabel}>Stay signed in</Text>
+                  <Text style={styles.checkboxLabel}>Remember me</Text>
                 </View>
               </>
-            )}
+            )
+            }
           </Formik>
         </View>
       </DismissKeyboard>

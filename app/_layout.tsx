@@ -1,5 +1,5 @@
 // app/_layout.tsx
-import { Stack, useRouter, useSegments } from "expo-router";
+import { Stack, useRouter, useSegments, useRootNavigationState } from "expo-router";
 import { useFonts } from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
@@ -13,23 +13,16 @@ SplashScreen.preventAutoHideAsync();
 
 export { ErrorBoundary } from "expo-router";
 
-export const unstable_settings = {
-  initialRouteName: "(tabs)",
-};
+
 
 function AppNavigator() {
   const { user, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
-  const [isNavigationReady, setIsNavigationReady] = useState(false);
+  const rootNavigationState = useRootNavigationState();
 
   useEffect(() => {
-    // A small buffer to ensure the Root Layout is ready before calculating routing
-    setTimeout(() => setIsNavigationReady(true), 100);
-  }, []);
-
-  useEffect(() => {
-    if (!isNavigationReady || loading) return;
+    if (!rootNavigationState?.key || loading) return;
 
     const inAuthGroup = segments[0] === "(auth)";
 
@@ -41,9 +34,9 @@ function AppNavigator() {
     else if (user && inAuthGroup) {
       router.replace("/(tabs)/browse" as any);
     }
-  }, [user, segments, loading, isNavigationReady]);
+  }, [user, segments, loading, rootNavigationState?.key]);
 
-  if (loading || !isNavigationReady) {
+  if (loading || !rootNavigationState?.key) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" color="#0066CC" />
@@ -97,7 +90,11 @@ const styles = StyleSheet.create({
     width: "100%",
     marginHorizontal: "auto",
     backgroundColor: "#fff",
-    // Add subtle shadow for web to distinguish the app frame from the background
-    boxShadow: Platform.OS === "web" ? "0 0 15px rgba(0,0,0,0.1)" : "none",
+    // Standard shadows for cross-platform support where possible
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
   },
 });

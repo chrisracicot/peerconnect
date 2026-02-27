@@ -26,7 +26,8 @@ BEGIN
   (user1_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'alice@peerconnect.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name": "Alice Expert"}', now(), now()),
   (user2_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'bob@peerconnect.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name": "Bob Learner"}', now(), now()),
   (user3_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'charlie@peerconnect.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name": "Charlie Tutor"}', now(), now()),
-  (user4_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'diana@peerconnect.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name": "Diana Student"}', now(), now());
+  (user4_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'diana@peerconnect.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name": "Diana Student"}', now(), now()),
+  (gen_random_uuid(), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'admin@peerconnect.com', crypt('password123', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{"full_name": "System Admin"}', now(), now());
 
   -- (Note: The auth.users insert above automatically triggers `handle_new_user()` which creates rows in public.profiles)
 
