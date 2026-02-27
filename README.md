@@ -6,10 +6,12 @@ PeerConnect matches classmates who need academic help with peers ready to share 
 
 - **Authentication:** Secure email and password signup/login flow.
 - **Request Management:** Post requests for help in specific courses (e.g., math, computer science) and browse requests made by others.
-- **Bookings:** Schedule and confirm tutoring sessions.
-- **Direct Messaging:** Chat securely with classmates directly to coordinate help.
+- **Bookings & Proposals:** Tutors can propose tutoring sessions with set prices directly in chat.
+- **Secure Mock Payments (Escrow):** Students can accept proposals and process mock payments that are securely held in escrow until the session is completed.
+- **Direct Messaging:** Chat securely in real-time with classmates to coordinate help.
+- **Trust & Safety:** In-app reporting system allows users to flag inappropriate messages or users for admin review.
 - **Profiles:** Manage your user profile safely.
-- **Admin Dashboard:** Special demo admin view (`admin@peerconnect.com`) for tracking and managing users and posts on the platform.
+- **Admin Dashboard:** Special demo admin view (`admin@peerconnect.com`) for tracking and managing users, posts, and moderation reports on the platform.
 
 ## Tech Stack
 
@@ -78,3 +80,4 @@ You will also need a **Supabase project** to handle PostgreSQL, Auth, and Storag
 ## Authors & License
 
 Contributors to PeerConnect. Built with React Native & Expo.
+Christin Racicot, Kareem Isreali, George Conde, Ruili Hu (Lily)
