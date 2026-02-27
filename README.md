@@ -45,17 +45,14 @@ You will also need a **Supabase project** to handle PostgreSQL, Auth, and Storag
    - Run `seed.sql` to populate initial mock data (optional).
 
 3. **Configure Environment Variables:**
-   Create a `.env` file in the root of the project:
-   ```env
-   EXPO_PUBLIC_SUPABASE_URL=your_supabase_project_url
-   EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-   ```
-   *Replace `your_supabase_project_url` and `your_supabase_anon_key` with the credentials from your Supabase dashboard.*
+   - Copy `.env.example` to `.env`
+   - Paste values from your Supabase project settings into the new `.env` file.
 
 4. **Run the application:**
-   - To start the Expo development server:
+   - To install dependencies and start the Expo development server:
      ```bash
-     npm start
+     npm install
+     npx expo start
      ```
    - To run on Web:
      ```bash
