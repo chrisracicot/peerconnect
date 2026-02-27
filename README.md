@@ -4,14 +4,13 @@ PeerConnect matches classmates who need academic help with peers ready to share 
 
 ## Features
 
-- **Authentication:** Secure email and password signup/login flow.
-- **Request Management:** Post requests for help in specific courses (e.g., math, computer science) and browse requests made by others.
-- **Bookings & Proposals:** Tutors can propose tutoring sessions with set prices directly in chat.
-- **Secure Mock Payments (Escrow):** Students can accept proposals and process mock payments that are securely held in escrow until the session is completed.
-- **Direct Messaging:** Chat securely in real-time with classmates to coordinate help.
-- **Trust & Safety:** In-app reporting system allows users to flag inappropriate messages or users for admin review.
-- **Profiles:** Manage your user profile safely.
-- **Admin Dashboard:** Special demo admin view (`admin@peerconnect.com`) for tracking and managing users, posts, and moderation reports on the platform.
+- **Unified Schema Setup:** Simplified database initialization with a single master `schema.sql` script handling all tables, RLS, and extensions.
+- **Architectural Security (Auth Guard):** Professional-grade routing gate using Expo Router groups (`(auth)`) and global layout redirection to prevent unauthenticated access to protected screens.
+- **Automated Escrow (pg_cron):** Hands-off fund release system using PostgreSQL background workers (`pg_cron`) to auto-release escrow sessions exactly after 21 days regardless of client activity.
+- **Real-Time Messaging:** Instant 1-on-1 chat using Supabase PostgreSQL subscriptions for high-concurrency communication.
+- **In-App Notifications:** Dedicated alerts system for tracking booking confirmations, payments, and message events.
+- **Trust & Safety:** Integrated reporting pipeline for flagging content, manageable via a secure Admin Dashboard.
+- **Admin Management:** Specialized dashboard (`admin@peerconnect.com`) for platform oversight, user management, and moderation.
 
 ## Tech Stack
 
