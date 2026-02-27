@@ -80,4 +80,4 @@ You will also need a **Supabase project** to handle PostgreSQL, Auth, and Storag
 ## Authors & License
 
 Contributors to PeerConnect. Built with React Native & Expo.
-Christin Racicot, Kareem Isreali, George Conde, Ruili Hu (Lily)
+Christin Racicot, Karie Israeli, George Conde, Ruili Hu (Lily)
